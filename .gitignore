@@ -1,0 +1,12 @@
+node_modules/
+artifacts/
+test-results/
+playwright-report/
+public/data/*source.xml
+public/data/osm-city.xml
+public/data/terrain-*.png
+
+dist/
+.env
+.env.*
+.DS_Store

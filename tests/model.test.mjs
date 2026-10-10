@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {hazards,createState,riskLevel,updateValue,tick,project,unproject,interpolateHeight} from '../src/model.js';
+test('八类风险独立，全部初始读数处于常态',()=>{const s=createState();assert.equal(hazards.length,8);assert.equal(new Set(hazards.map(h=>h.id)).size,8);for(const h of hazards)assert.equal(riskLevel(h,s.states[h.id].value),0)});
+test('八类风险关注和高风险演示阈值均可触发',()=>{for(const h of hazards){assert.equal(riskLevel(h,h.warning),1,h.id);assert.equal(riskLevel(h,h.danger),2,h.id)}});
+test('改变一种风险不覆盖其他风险状态',()=>{const s=createState();updateValue(s,'water',35);updateValue(s,'heat',40);assert.equal(s.states.water.level,2);assert.equal(s.states.heat.level,2);updateValue(s,'water',0);assert.equal(s.states.heat.level,2)});
+test('数据更新排除非数值并约束合法范围',()=>{const s=createState();updateValue(s,'water',NaN);assert.equal(s.states.water.value,8);updateValue(s,'water',999);assert.equal(s.states.water.value,60)});
+test('设备异常时模拟时钟推进但读数停止更新',()=>{const s=createState();s.states.water.fault=true;tick(s);assert.equal(s.seconds,1);assert.equal(s.states.water.value,8);assert.equal(s.states.water.history.length,1);assert.ok(s.states.heat.history.length>1)});
+test('历史与日志有界，不重复制造相同等级事件',()=>{const s=createState();for(let i=0;i<1000;i++){s.seconds++;updateValue(s,'water',i%2?50:0)}assert.equal(s.events.length,80);assert.equal(s.states.water.history.length,80);const count=s.events.length;updateValue(s,'water',45);assert.equal(s.events.length,count)});
+test('坐标转换往返保持经纬度且北方映射到负z',()=>{const b={west:103.46,east:103.73,south:30.94,north:31.17};const q=project(103.57,31.12,b),p=unproject(q.x,q.z,b);assert.ok(Math.abs(p.lon-103.57)<1e-10);assert.ok(Math.abs(p.lat-31.12)<1e-10);assert.ok(q.z<0)});
+test('高程双线性采样正确处理中心和边界',()=>{const t={bounds:{west:0,east:1,south:0,north:1},size:2,heights:[100,200,300,400]};assert.equal(interpolateHeight(.5,.5,t),250);assert.equal(interpolateHeight(0,1,t),100);assert.equal(interpolateHeight(1,0,t),400)});
+test('模拟涨水速度按cm/min换算到每秒增量',()=>{const s=createState();s.states.water.secondary=3;tick(s);assert.ok(Math.abs(s.states.water.value-8.05)<1e-10);});
