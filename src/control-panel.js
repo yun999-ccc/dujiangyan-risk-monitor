@@ -1,0 +1,47 @@
+import {hazards,levels} from './model.js';
+import {zones,fields,secondaryConfig,updateNode,setPolicy,prepareScenario,seekScenario,rewindScenario,assess} from './simulation.js';
+export function mountControls(getState,render,select,toast){
+ const $=q=>document.querySelector(q);
+ const markup=`<section class="panel simulation-workbench"><div class="panelhead"><h2>八类参数总览</h2><span>独立输入 · 同步反馈</span></div><div id="parameter-overview" class="parameter-overview"></div><div class="simulation-bar"><label>控制方式<select id="control-mode"><option value="manual">手动保持</option><option value="scenario">情景播放</option></select></label><label>情景时长 / 分钟<input id="duration" type="number" min="1" max="120" value="30"></label><button class="btn" id="prepare">生成情景 / 应用轨迹</button><button class="btn" id="rewind">回到起点</button></div><p class="control-hint" id="mode-hint"></p><label class="seek-label" for="seek">情景时间线 <output id="seek-label">尚未生成</output></label><input id="seek" type="range" min="0" max="1800" step="1" value="0" disabled><details class="weather-panel"><summary>片区共享降雨背景</summary><p class="control-hint">只联动该片区已勾选的节点。降雨不直接改变积水深度或边坡位移。</p><div class="weather-fields"><label>片区<select id="weather-zone">${zones.map(z=>`<option>${z}</option>`).join('')}</select></label><label class="check-field"><input id="weather-enabled" type="checkbox">启用共享背景</label><label>起始雨强 / mm/h<input id="weather-rain" type="number" min="0" max="100" step="1"></label><label>结束雨强 / mm/h<input id="weather-target" type="number" min="0" max="100" step="1"></label><label>前期雨量 / mm<input id="weather-antecedent" type="number" min="0" max="1000" step="1"></label><div id="weather-result" class="control-hint"></div></div></details></section>`;
+ $('.timeline-panel').insertAdjacentHTML('beforebegin',markup);
+ $('#value-slider').insertAdjacentHTML('afterend','<input id="value-number" class="precision-input" type="number" aria-label="主参数精确输入"><select id="lightning-signal" aria-label="模拟雷电信号"><option value="0">无信号</option><option value="1">模拟黄色信号</option><option value="2">模拟橙色信号</option><option value="3">模拟红色信号</option></select>');
+ $('#secondary-slider').insertAdjacentHTML('afterend','<input id="secondary-number" class="precision-input" type="number" aria-label="辅助参数精确输入">');
+ $('.presets').insertAdjacentHTML('afterend',`<div class="evidence-section"><h3>现场与活动输入</h3><div id="evidence-fields"></div><label>模拟数据状态<select id="quality"><option value="valid">有效模拟数据</option><option value="expired">数据过期 / 待核查</option><option value="missing">数据缺失 / 未知</option></select></label><label class="check-field"><input id="linked" type="checkbox">关联所在片区降雨背景</label></div><details class="track-panel"><summary>所选参数的变化轨迹</summary><label class="check-field"><input id="track-enabled" type="checkbox">播放时从当前值变化到目标值</label><label>结束目标值<input id="track-target" type="number"></label><p class="control-hint">修改配置后点击“生成情景”。手动修改主参数会退出该项轨迹。</p></details><details class="policy-panel"><summary>演示阈值配置 · 未经标定</summary><label>关注阈值<input id="policy-warning" type="number"></label><label>高风险阈值<input id="policy-danger" type="number"></label><button class="btn" id="apply-policy">应用演示阈值</button><p class="control-hint">冰雪结冰同时读取路面与巡查记录；阈值不能确认结冰。</p></details>`);
+ $('.status-box').insertAdjacentHTML('afterend','<div class="decision-note"><b>判断依据</b><p id="decision-reason"></p><small id="input-provenance"></small></div>');
+ function dirty(){const s=getState();s.running=false;s.scenario=null;toast('配置已改变，请重新生成情景');render()}
+ function changePrimary(v){if(!Number.isFinite(v))return;window.__monitor.updateValue(getState().selected,v)}
+ $('#value-number').onchange=e=>{if(e.target.value!==''&&e.target.checkValidity())changePrimary(e.target.valueAsNumber);else{toast('请输入范围内的有效数值');render()}};
+ $('#lightning-signal').onchange=e=>changePrimary(+e.target.value);
+ $('#secondary-number').onchange=e=>{if(e.target.value!==''&&e.target.checkValidity()){updateNode(getState(),getState().selected,'secondary',e.target.valueAsNumber);render()}else{toast('请输入有效辅助参数');render()}};
+ $('#quality').onchange=e=>{updateNode(getState(),getState().selected,'quality',e.target.value);render()};
+ $('#evidence-fields').onchange=e=>{const field=fields[getState().selected].find(f=>f.key===e.target.dataset.key);if(!field)return;if(!field.options&&(e.target.value===''||!e.target.checkValidity())){toast('输入超出范围');render();return}updateNode(getState(),getState().selected,field.key,field.options?e.target.value:e.target.valueAsNumber);render()};
+ $('#linked').onchange=e=>{getState().states[getState().selected].linked=e.target.checked;dirty()};
+ $('#track-enabled').onchange=e=>{getState().states[getState().selected].track.enabled=e.target.checked;dirty()};
+ $('#track-target').onchange=e=>{if(e.target.value!==''&&e.target.checkValidity()){getState().states[getState().selected].track.target=e.target.valueAsNumber;dirty()}else{toast('轨迹目标超出范围');render()}};
+ $('#control-mode').onchange=e=>{getState().controlMode=e.target.value;getState().running=false;render()};
+ $('#duration').onchange=e=>{if(e.target.checkValidity()&&e.target.value!==''){getState().durationMinutes=e.target.valueAsNumber;dirty()}else{toast('情景时长范围为1—120分钟');render()}};
+ $('#prepare').onclick=()=>{prepareScenario(getState());render();toast('情景已生成，只播放勾选的轨迹与背景')};
+ $('#rewind').onclick=()=>{rewindScenario(getState());render()};
+ $('#seek').oninput=e=>{getState().running=false;seekScenario(getState(),+e.target.value);render()};
+ $('#parameter-overview').onclick=e=>{const b=e.target.closest('[data-select]');if(b)select(b.dataset.select)};
+ $('#weather-zone').onchange=()=>render();
+ for(const key of ['enabled','rain','target','antecedent'])$(`#weather-${key}`).onchange=e=>{if(key!=='enabled'&&(e.target.value===''||!e.target.checkValidity())){toast('降雨输入超出范围');render();return}getState().weather[$('#weather-zone').value][key]=key==='enabled'?e.target.checked:e.target.valueAsNumber;dirty()};
+ $('#apply-policy').onclick=()=>{if(!setPolicy(getState(),getState().selected,$('#policy-warning').valueAsNumber,$('#policy-danger').valueAsNumber))toast('阈值必须在范围内，且关注与高风险顺序正确');else toast('演示阈值已更新');render()};
+ let currentId;
+ function number(selector,value,min,max,step){const el=$(selector);el.min=min;el.max=max;el.step=step;if(document.activeElement!==el)el.value=value;}
+ return {render(){const s=getState(),h=hazards.find(h=>h.id===s.selected),n=s.states[h.id];
+  for(const item of hazards)assess(s,item.id);
+  $('#parameter-overview').innerHTML=hazards.map(h=>{const n=s.states[h.id];return `<button data-select="${h.id}" class="parameter-card ${h.id===s.selected?'active':''}"><span>${h.name}<i style="background:${n.unknown?'#8f9692':levels[n.level].color}"></i></span><strong>${n.unknown?'未知':h.id==='lightning'?['无','黄','橙','红'][Math.round(n.value)]:Number(n.value.toFixed(1))}<small>${h.id==='lightning'?'模拟信号':h.unit}</small></strong><small>${n.source}</small></button>`}).join('');
+  number('#value-number',n.value,h.min,h.max,h.step);$('#value-number').disabled=n.fault;$('#value-number').hidden=h.id==='lightning';$('#value-slider').hidden=h.id==='lightning';$('#lightning-signal').hidden=h.id!=='lightning';$('#lightning-signal').value=n.value;$('#lightning-signal').disabled=n.fault;
+  const c=secondaryConfig(h.id);number('#secondary-number',n.secondary,c.min,c.max,c.step);number('#secondary-slider',n.secondary,c.min,c.max,c.step);$('#secondary-number').disabled=n.fault;$('#secondary-slider').nextElementSibling.nextElementSibling.firstElementChild.textContent=c.min;
+  $('#secondary-slider').nextElementSibling.nextElementSibling.lastElementChild.textContent=c.max;
+  if(currentId!==h.id){$('#evidence-fields').innerHTML=fields[h.id].map(f=>`<label>${f.label}${f.unit?' / '+f.unit:''}${f.options?`<select data-key="${f.key}">${f.options.map(v=>`<option>${v}</option>`).join('')}</select>`:`<input data-key="${f.key}" type="number" min="${f.min}" max="${f.max}" step="${f.step}">`}</label>`).join('');currentId=h.id;}
+  for(const f of fields[h.id]){const el=$(`[data-key="${f.key}"]`);if(document.activeElement!==el)el.value=n.extra[f.key]}
+  $('#quality').value=n.quality;$('#linked').checked=n.linked;$('#linked').disabled=h.id==='lightning'||h.id==='wind'||h.id==='heat'||h.id==='forest'||h.id==='ice';
+  $('#track-enabled').checked=n.track.enabled;number('#track-target',n.track.target,h.min,h.max,h.step);number('#policy-warning',n.policy.warning,h.min,h.max,h.step);number('#policy-danger',n.policy.danger,h.min,h.max,h.step);
+  $('#decision-reason').textContent=n.reason;$('#input-provenance').textContent=`${s.ruleVersion} · ${n.source} · 最近手动修改 ${n.modifiedAt}模拟秒 · 尚未接入真实设备或官方预警`;
+  $('#control-mode').value=s.controlMode;number('#duration',s.durationMinutes,1,120,1);$('#seek').disabled=!s.scenario;$('#rewind').disabled=!s.scenario;$('#seek').max=s.scenario?.duration??1800;$('#seek').value=s.seconds;$('#seek-label').textContent=s.scenario?`${Math.floor(s.seconds/60)}分${s.seconds%60}秒 / ${s.scenario.duration/60}分钟`:'尚未生成';
+  $('#mode-hint').textContent=s.controlMode==='manual'?'手动保持：播放只推进时钟，不改变参数。精确输入只影响所选项。':s.scenario?'情景播放：仅勾选的轨迹、涨退速度和共享降雨生效。时间线可暂停定位；回到起点可重播。':'先配置轨迹和片区背景，再点击生成情景。';
+  const w=s.weather[$('#weather-zone').value];$('#weather-enabled').checked=w.enabled;for(const key of ['rain','target','antecedent'])number(`#weather-${key}`,w[key],0,key==='antecedent'?1000:100,1);$('#weather-result').textContent=`过程累计 ${w.cumulative.toFixed(1)}mm；前期雨量单独记录。滑坡不因降雨自动产生位移。`;
+ }};
+}
