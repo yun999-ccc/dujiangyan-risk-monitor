@@ -27,7 +27,7 @@ export function roadProfile(tags, mountain=false) {
 }
 
 // All ribbons are batched into a single colored mesh; no elevated road tubes.
-export function createRoadBuilder(bounds, elevation) {
+export function createRoadBuilder(bounds, elevation, liftScale=1, mountainOverride=null) {
   const positions=[], colors=[], metadata=[];
   const mountainTint=new THREE.Color('#85887d');
   const ground=(x,z)=>{const geo=unproject(x,z,bounds);return elevation(geo.lon,geo.lat);};
@@ -38,7 +38,7 @@ export function createRoadBuilder(bounds, elevation) {
     const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
     const x=(a[0]+b[0]+c[0])/3,z=(a[2]+b[2]+c[2])/3;
     const error=Math.max(Math.abs(ab[1]-(a[1]+b[1])/2),Math.abs(bc[1]-(b[1]+c[1])/2),Math.abs(ca[1]-(c[1]+a[1])/2),Math.abs(ground(x,z)+offset-(a[1]+b[1]+c[1])/3));
-    if(error>.0005&&depth<6){
+    if(error>.0005*liftScale&&depth<6){
       triangle(a,ab,ca,color,offset,depth+1);triangle(ab,b,bc,color,offset,depth+1);
       triangle(ca,bc,c,color,offset,depth+1);triangle(ab,bc,ca,color,offset,depth+1);return;
     }
@@ -72,7 +72,7 @@ export function createRoadBuilder(bounds, elevation) {
     if(coords.length<2)return;
     // This is a display classification from the DEM, not a surveyed road surface.
     const heights=coords.map(q=>elevation(q.lon,q.lat)).sort((a,b)=>a-b);
-    const mountain=heights[Math.floor(heights.length/2)]>.72;
+    const mountain=mountainOverride??(heights[Math.floor(heights.length/2)]>.72);
     const profile=roadProfile(way.tags,mountain), points=[];
     for(let i=1;i<coords.length;i++){
       const a=project(coords[i-1].lon,coords[i-1].lat,bounds),b=project(coords[i].lon,coords[i].lat,bounds);
@@ -80,11 +80,11 @@ export function createRoadBuilder(bounds, elevation) {
       for(let j=0;j<count;j++){const t=j/count;points.push({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});}
     }
     points.push(project(coords.at(-1).lon,coords.at(-1).lat,bounds));
-    if(!profile.walking)strip(points,profile.width+(mountain?.001:.0024),.0014,mountain?'#a5a794':'#b9b5a5');
-    strip(points,profile.width,.0018,profile.color);
+    if(!profile.walking)strip(points,profile.width+(mountain?.001:.0024),.0014*liftScale,mountain?'#a5a794':'#b9b5a5');
+    strip(points,profile.width,.0018*liftScale,profile.color);
     if(profile.major&&!mountain){
       // Illustrative road markings; not surveyed lane geometry.
-      for(let i=1;i<points.length;i+=2){const a=points[i-1],b=points[i];if(ground(a.x,a.z)>.28)continue;strip([a,{x:a.x+(b.x-a.x)*.45,z:a.z+(b.z-a.z)*.45}],.00035,.0022,'#ebd08a');}
+      for(let i=1;i<points.length;i+=2){const a=points[i-1],b=points[i];if(ground(a.x,a.z)>.28)continue;strip([a,{x:a.x+(b.x-a.x)*.45,z:a.z+(b.z-a.z)*.45}],.00035,.0022*liftScale,'#ebd08a');}
     }
     metadata.push({id:way.id,kind:way.tags.highway,widthMeters:profile.width*1000,widthSource:profile.widthSource,mountain,color:profile.color});
   }
