@@ -18,7 +18,7 @@ export function mountWaterView(getState,onDepth,onLocate){
   $('#water-animation').onchange=e=>{animation=e.target.checked;refresh()};$('#water-rain').onchange=e=>{rainEffects=e.target.checked;refresh()};
   let scene,camera,controls,water,uniforms,disposed=false,phase=0,lastFrame=performance.now(),observer;
   try{
-    renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setClearColor('#e8eee7');renderer.outputColorSpace=THREE.SRGBColorSpace;container.append(renderer.domElement);
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor('#e8eee7');renderer.outputColorSpace=THREE.SRGBColorSpace;container.append(renderer.domElement);
     scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(37,1,.1,150);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=5;controls.maxDistance=55;controls.maxPolarAngle=Math.PI*.47;
     const reset=()=>{camera.position.set(20,15,23);controls.target.set(0,.5,0);if(container.clientWidth<640)camera.position.sub(controls.target).multiplyScalar(1.4).add(controls.target);controls.update();};reset();$('#water-camera').onclick=reset;
     scene.add(new THREE.HemisphereLight('#f4f9ff','#858d79',2));const sun=new THREE.DirectionalLight('#fff5db',2.5);sun.position.set(-12,20,8);scene.add(sun);
