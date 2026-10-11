@@ -23,7 +23,7 @@ export function createState(){
 export function log(s,id,text){s.events.unshift({time:s.seconds,hazard:id,text});s.events=s.events.slice(0,80)}
 export function assess(s,id){
  const h=hazards.find(h=>h.id===id),n=s.states[id];
- n.unknown=n.fault||n.quality!=='valid'||(id==='lightning'&&n.value>0&&s.seconds-n.signalIssuedAt>=n.extra.validMinutes*60);
+ n.unknown=n.fault||n.quality!=='valid'||(id==='lightning'&&n.value>0&&(s.lightningSession?.warningClock??s.seconds)-n.signalIssuedAt>=n.extra.validMinutes*60);
  n.level=n.unknown?0:riskLevel({...h,...n.policy},n.value);
  let reason=`${h.metric} ${Number(n.value.toFixed(2))}${h.unit}；演示关注阈值 ${n.policy.warning}${h.unit}、高风险阈值 ${n.policy.danger}${h.unit}。`;
  if(id==='ice'){
@@ -36,7 +36,7 @@ export function assess(s,id){
   if(!n.unknown&&n.extra.inspection!=='未巡查'&&n.extra.inspection!=='未见异常')n.level=Math.max(n.level,1);
   reason+=` 巡查：${n.extra.inspection}；外部预警：${n.extra.external}。阈值未作点位标定，不代表灾害已经发生。`;
  }
- if(id==='lightning')reason=`模拟信号：${['无信号','黄色','橙色','红色'][Math.round(n.value)]}；活动：${n.extra.activity}，${n.secondary}人；有效期 ${n.extra.validMinutes}分钟。此信号未接入气象部门。`;
+ if(id==='lightning')reason=`模拟信号：${['无信号','黄色','橙色','红色'][Math.round(n.value)]}；活动：${n.extra.activity}；有效期 ${n.extra.validMinutes}分钟。此信号未接入气象部门。`;
  if(id==='forest')reason+=` 湿度 ${n.secondary}%，背景风速 ${n.extra.wind}m/s，近期${n.extra.recentRain}；背景条件不计算正式火险指数。`;
  if(id==='wind'&&!n.unknown&&n.extra.inspection==='发现松动')n.level=Math.max(n.level,1);
  if(id==='wind')reason+=` 风向 ${n.extra.direction}°，持续 ${n.secondary}秒；${n.extra.facility}巡查：${n.extra.inspection}。不判断设施会否倒塌。`;
@@ -50,14 +50,14 @@ export function assess(s,id){
  n.reason=n.unknown?'数据中断、过期或缺失；当前状态未知，需要核查。':reason;
 }
 function refresh(s,id,history=true){const n=s.states[id],prev=n.level,unknown=n.unknown;assess(s,id);if(prev!==n.level||unknown!==n.unknown)log(s,id,`${hazards.find(h=>h.id===id).name}：${n.unknown?'数据未知':n.level===2?'高风险演示':n.level===1?'关注核查':'常态演示'}`);if(history&&!n.unknown){n.history.push({t:s.seconds,v:n.value});n.history=n.history.slice(-80)}}
-function override(s,id){const n=s.states[id];n.track.enabled=false;if(id==='water')n.extra.evolution='关闭';n.source='手动模拟';n.modifiedAt=s.seconds;if(id==='debris')n.linked=false;if(s.scenario){s.scenario.baseline.states[id]=copy(n);s.scenario.baseline.states[id].history=[{t:0,v:n.value}]} }
-export function updateValue(s,id,value){const h=hazards.find(h=>h.id===id);if(!h||!Number.isFinite(value))return;const n=s.states[id];n.value=Math.max(h.min,Math.min(h.max,value));if(id==='lightning'){n.value=Math.round(n.value);n.signalIssuedAt=s.seconds}override(s,id);refresh(s,id);log(s,id,`${h.name}主参数设为 ${n.value}${h.unit}；退出该项自动轨迹`)}
+function override(s,id){const n=s.states[id];n.track.enabled=false;if(id==='water')n.extra.evolution='关闭';n.source='手动模拟';n.modifiedAt=id==='lightning'?(s.lightningSession?.warningClock??s.seconds):s.seconds;if(id==='debris')n.linked=false;if(s.scenario){s.scenario.baseline.states[id]=copy(n);s.scenario.baseline.states[id].history=[{t:0,v:n.value}]} }
+export function updateValue(s,id,value){const h=hazards.find(h=>h.id===id);if(!h||!Number.isFinite(value))return;const n=s.states[id];n.value=Math.max(h.min,Math.min(h.max,value));if(id==='lightning'){n.value=Math.round(n.value);n.signalIssuedAt=s.lightningSession?.warningClock??s.seconds}override(s,id);refresh(s,id);log(s,id,`${h.name}主参数设为 ${n.value}${h.unit}；退出该项自动轨迹`)}
 export function updateNode(s,id,key,value){const n=s.states[id];if(key==='secondary'){if(!Number.isFinite(value))return;const c=secondaryConfig(id);n.secondary=Math.max(c.min,Math.min(c.max,value))}else if(key==='quality')n.quality=value;else if(key==='fault')n.fault=value;else{const f=fields[id].find(f=>f.key===key);if(!f)return;if(f.options){if(!f.options.includes(value))return}else{if(!Number.isFinite(value))return;value=Math.max(f.min,Math.min(f.max,value))}n.extra[key]=value}
- n.source='手动模拟';n.modifiedAt=s.seconds;if(s.scenario){const base=s.scenario.baseline.states[id];if(['secondary','quality','fault'].includes(key))base[key]=n[key];else base.extra[key]=n.extra[key];}refresh(s,id);log(s,id,`${hazards.find(h=>h.id===id).name}：更新模拟输入 ${key}`);
+ n.source='手动模拟';n.modifiedAt=id==='lightning'?(s.lightningSession?.warningClock??s.seconds):s.seconds;if(s.scenario){const base=s.scenario.baseline.states[id];if(['secondary','quality','fault'].includes(key))base[key]=n[key];else base.extra[key]=n.extra[key];}refresh(s,id);log(s,id,`${hazards.find(h=>h.id===id).name}：更新模拟输入 ${key}`);
 }
 export function setPolicy(s,id,warning,danger){const h=hazards.find(h=>h.id===id);if(![warning,danger].every(Number.isFinite)||warning<h.min||warning>h.max||danger<h.min||danger>h.max||(h.inverse?warning<=danger:warning>=danger))return false;s.states[id].policy={warning,danger};if(s.scenario)s.scenario.baseline.states[id].policy={warning,danger};refresh(s,id,false);log(s,id,'修改演示阈值（未经点位标定）');return true}
 export function applyPreset(s,id,level){const h=hazards.find(h=>h.id===id),n=s.states[id];n.fault=false;n.quality='valid';if(id==='ice'){n.extra.surface=level?'有水':'干燥';n.extra.inspection=level===2?'发现结冰':'未巡查'}if(id==='forest')n.extra.inspection='未巡查';if(['landslide','debris'].includes(id)){n.extra.inspection='未巡查';n.extra.external='无'}updateValue(s,id,[h.initial,n.policy.warning,n.policy.danger][level]);}
-export function prepareScenario(s){s.running=false;s.seconds=0;s.controlMode='scenario';s.events=[];for(const h of hazards){s.states[h.id].signalIssuedAt=0;s.states[h.id].history=[{t:0,v:s.states[h.id].value}];s.states[h.id].modifiedAt=0;}for(const w of Object.values(s.weather))w.cumulative=0;s.scenario={duration:Math.max(60,Math.min(7200,s.durationMinutes*60)),baseline:{states:copy(s.states),weather:copy(s.weather)}};log(s,'scenario','情景已生成；1秒播放 = 1秒模拟，速度只改变时间推进');seekScenario(s,0);}
+export function prepareScenario(s){s.running=false;s.seconds=0;s.controlMode='scenario';s.events=[];for(const h of hazards){if(h.id!=='lightning'||!s.lightningSession)s.states[h.id].signalIssuedAt=0;s.states[h.id].history=[{t:0,v:s.states[h.id].value}];if(h.id!=='lightning'||!s.lightningSession)s.states[h.id].modifiedAt=0;}for(const w of Object.values(s.weather))w.cumulative=0;s.scenario={duration:Math.max(60,Math.min(7200,s.durationMinutes*60)),baseline:{states:copy(s.states),weather:copy(s.weather)}};log(s,'scenario','情景已生成；1秒播放 = 1秒模拟，速度只改变时间推进');seekScenario(s,0);}
 export function seekScenario(s,seconds){if(!s.scenario)return;const {baseline,duration}=s.scenario;const oldTime=s.seconds;s.seconds=Math.max(0,Math.min(duration,seconds));if(s.seconds<oldTime)for(const n of Object.values(s.states))n.history=n.history.filter(p=>p.t<=s.seconds);const t=s.seconds/duration;
  for(const z of zones){const base=baseline.weather[z],w=s.weather[z];w.rain=base.enabled?base.rain+(base.target-base.rain)*t:base.rain;w.cumulative=base.enabled?(base.rain+w.rain)/2*s.seconds/3600:0;}
  for(const h of hazards){const n=s.states[h.id],base=baseline.states[h.id];if(n.fault||n.quality!=='valid'){refresh(s,h.id,false);continue}n.value=base.track.enabled?base.value+(base.track.target-base.value)*t:base.value;n.source=base.track.enabled?'情景轨迹':'手动模拟';if(h.id==='lightning')n.value=Math.round(n.value);
