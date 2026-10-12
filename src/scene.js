@@ -123,7 +123,7 @@ export async function createScene(container,getState,onSelect){
   const placements=arrangeLabels(entries,w,h,reserved);
   for(const {el,box} of placements){el.style.display=box?'block':'none';if(box){el.style.left=`${box.left}px`;el.style.top=`${box.top}px`;}}
   lightningLayer.update(camera,container);hazardLayer.update(camera);renderer.render(scene,camera);frames++;
-  window.__sceneMetrics={frames,elapsedMs:performance.now()-started,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,labelCount:placements.filter(p=>p.box).length,pixelRatio:renderer.getPixelRatio()};
+  window.__sceneMetrics={frames,buildingsVisible:buildings.visible&&buildings.children.length>0,roadsVisible:roads.visible,elapsedMs:performance.now()-started,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,labelCount:placements.filter(p=>p.box).length,pixelRatio:renderer.getPixelRatio()};
  }
 
  render();
