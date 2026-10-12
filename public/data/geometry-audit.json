@@ -1,0 +1,265 @@
+{
+  "version": 1,
+  "scope": "龙溪河黄央沟邻近片区：几何数据核查",
+  "files": [
+    {
+      "id": "terrain",
+      "path": "data/terrain.json",
+      "sha256": "732c2f5f0993421e8392de0f1bdb0e5fcc67a26f1b425a5346c327dfdb4ac832"
+    },
+    {
+      "id": "osm",
+      "path": "data/osm.json",
+      "sha256": "d0753de8ed66ed6b3bc773f190198a05d3bb72242af42ca7f4ff3c97e963d928"
+    },
+    {
+      "id": "hydraulic",
+      "path": "data/hydraulic.json",
+      "sha256": "7ae08ed10074255cd661e57a15948f8f7b801c4c3318a3ca712080c92f3f8b08"
+    }
+  ],
+  "terrain": {
+    "source": "Mapzen Terrain Tiles / AWS Open Data",
+    "url": "https://registry.opendata.aws/terrain-tiles/",
+    "downloaded": "2026-10-10",
+    "size": 513,
+    "bounds": {
+      "west": 103.46,
+      "east": 103.73,
+      "south": 30.94,
+      "north": 31.17
+    },
+    "tileZoom": 12,
+    "spacingMeters": {
+      "eastWest": 50.2900224082739,
+      "northSouth": 50.00703125000009
+    },
+    "verticalDatum": "当前打包资料没有逐瓦片高程基准和来源映射，尚未核实",
+    "accuracyMeters": null
+  },
+  "buildings": {
+    "total": 420,
+    "heightSources": {
+      "height-tag": 1,
+      "levels-assumed": 233,
+      "default-assumed": 186
+    },
+    "fieldVerified": 0,
+    "note": "标签是公开地图记录；楼层按3m换算和默认12m均为假定，标签高度也未现场核验。展示另有限高和基座处理。"
+  },
+  "locations": [
+    {
+      "id": "water",
+      "name": "积水",
+      "lon": 103.61,
+      "lat": 31.05,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "ice",
+      "name": "冰雪结冰",
+      "lon": 103.535,
+      "lat": 31.125,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "lightning",
+      "name": "雷电",
+      "lon": 103.565,
+      "lat": 31.1,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "wind",
+      "name": "大风",
+      "lon": 103.635,
+      "lat": 31.09,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "heat",
+      "name": "高温",
+      "lon": 103.67,
+      "lat": 30.99,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "forest",
+      "name": "森林火险",
+      "lon": 103.5,
+      "lat": 31.08,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "landslide",
+      "name": "滑坡",
+      "lon": 103.57,
+      "lat": 31.145,
+      "fieldVerified": false,
+      "source": "示意布置，未现场核实"
+    },
+    {
+      "id": "debris",
+      "name": "泥石流",
+      "lon": 103.5608611,
+      "lat": 31.07125,
+      "fieldVerified": false,
+      "source": "2014年黄央沟文献沟口坐标，基准未注明；不是现时影响边界"
+    }
+  ],
+  "river": {
+    "bounds": {
+      "west": 103.5539452520311,
+      "east": 103.5700547479689,
+      "north": 31.07914902982393,
+      "south": 31.06535097017607
+    },
+    "grid": {
+      "nx": 96,
+      "ny": 96,
+      "dx": 16
+    },
+    "centerline": {
+      "id": 219484805,
+      "url": "https://www.openstreetmap.org/way/219484805"
+    },
+    "roads": 8,
+    "buildings": 0,
+    "bridgeRoads": [
+      1218128963
+    ],
+    "defaultParameters": {
+      "qStart": 30,
+      "qPeak": 900,
+      "qEnd": 20,
+      "rain": 0,
+      "runoff": 0.6,
+      "drain": 1,
+      "drainBlocked": false,
+      "width": 48,
+      "bankDepth": 3,
+      "initialDepth": 0.35,
+      "roughness": 0.065,
+      "tailDepth": 0.25,
+      "duration": 1800
+    },
+    "modification": {
+      "tolerance": 0.01,
+      "changedCells": 1765,
+      "totalCells": 9216,
+      "changedArea": 451840,
+      "maxAbs": 50.91670693800006,
+      "maxIndex": 4478,
+      "minDelta": -50.91670693800006,
+      "maxDelta": 4.126049750490552,
+      "meanAbs": 1.6869002086568636
+    }
+  },
+  "requirements": [
+    {
+      "id": "ground",
+      "name": "岸外裸土地形与高程基准",
+      "required": true,
+      "status": "unverified",
+      "detail": "已有公开高程，尚未核实当地垂直精度、裸土属性和统一高程基准。"
+    },
+    {
+      "id": "bed",
+      "name": "河床断面与纵剖面",
+      "required": true,
+      "status": "missing",
+      "detail": "缺少实测河床；48m宽、3m深及纵向平滑为假定。"
+    },
+    {
+      "id": "bank",
+      "name": "河岸、堤顶与越岸通道",
+      "required": true,
+      "status": "missing",
+      "detail": "岸外96m过渡为人工修改，尚无实测堤防或护岸控制高程。"
+    },
+    {
+      "id": "structures",
+      "name": "道路、桥梁与建筑阻水结构",
+      "required": true,
+      "status": "unverified",
+      "detail": "局部8条道路包含桥梁标签；桥孔、路面高程及建筑覆盖未核实，当前桥梁按贴地道路展示。"
+    },
+    {
+      "id": "drain",
+      "name": "排水口、管网与排水能力",
+      "required": true,
+      "status": "missing",
+      "detail": "排水量为手动假定，无现场管网和排水能力资料。"
+    }
+  ],
+  "sourceChecks": [
+    {
+      "source": "OpenStreetMap API 0.6",
+      "url": "https://api.openstreetmap.org/api/0.6/map?bbox=103.553945252,31.065350970,103.570054748,31.079149030",
+      "checkedAt": "2026-10-12T11:57:08.246683+00:00",
+      "bounds": {
+        "west": 103.5539452520311,
+        "east": 103.5700547479689,
+        "north": 31.07914902982393,
+        "south": 31.06535097017607
+      },
+      "responseSha256": "67c7f7118ba96fafacd3ed9bf4d73d0b78854ccb2d394ee4f2776badc79be6e2",
+      "wayIds": {
+        "buildings": [],
+        "roads": [
+          306970823,
+          501045903,
+          1218128958,
+          1218128959,
+          1218128962,
+          1218128963,
+          1218128964,
+          1218128965
+        ],
+        "rivers": [
+          219484805
+        ]
+      },
+      "counts": {
+        "buildings": 0,
+        "roads": 8,
+        "rivers": 1
+      },
+      "note": "查询返回0条建筑way，只能说明该次公开地图查询缺少建筑记录；不能据此判定现场无建筑。未替换打包数据，不是现场核验。"
+    }
+  ],
+  "references": [
+    {
+      "title": "Terrain Tiles / AWS",
+      "url": "https://registry.opendata.aws/terrain-tiles/"
+    },
+    {
+      "title": "数据源说明 / Tilezen",
+      "url": "https://github.com/tilezen/joerd/blob/master/docs/data-sources.md"
+    },
+    {
+      "title": "水动力地形要求 / HEC-RAS",
+      "url": "https://www.hec.usace.army.mil/confluence/rasdocs/rmum/latest/terrain-layer"
+    },
+    {
+      "title": "OpenStreetMap / ODbL",
+      "url": "https://www.openstreetmap.org/copyright"
+    }
+  ],
+  "readiness": {
+    "ready": false,
+    "gaps": [
+      "ground",
+      "bed",
+      "bank",
+      "structures",
+      "drain"
+    ]
+  }
+}

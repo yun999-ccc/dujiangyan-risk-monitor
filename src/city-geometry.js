@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {project, unproject} from './model.js';
+import {parseLengthMeters} from './geometry-audit.js';
 
 // Sample the same diagonal as PlaneGeometry, so thin road ribbons stay on the mesh.
 export function surfaceHeight(lon, lat, terrain) {
@@ -17,7 +18,7 @@ export function roadProfile(tags, mountain=false) {
   const walking=['footway','path','pedestrian','steps','cycleway'].includes(kind);
   const major=['motorway','trunk','primary','secondary'].includes(kind);
   const widths={motorway:26,trunk:22,primary:18,secondary:14,tertiary:10,residential:7,living_street:5,unclassified:6,service:4,track:3};
-  const supplied=Number.parseFloat(tags.width), lanes=Number.parseFloat(tags.lanes);
+  const supplied=parseLengthMeters(tags.width), lanes=Number(tags.lanes);
   const width=Number.isFinite(supplied)&&supplied>0 ? supplied : Number.isFinite(lanes)&&lanes>0 ? lanes*3.3+1 : widths[kind]??(walking?2:6);
   const estimated=!(Number.isFinite(supplied)&&supplied>0)&&!(Number.isFinite(lanes)&&lanes>0);
   const displayWidth=mountain&&estimated&&!major ? Math.min(width,8) : width;

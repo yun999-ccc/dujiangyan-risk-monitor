@@ -1,3 +1,4 @@
+import {buildingHeight} from './geometry-audit.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -42,9 +43,8 @@ export async function createScene(container,getState,onSelect){
   lightningExclusions.push({west:Math.min(...coords.map(c=>c.lon))-.0003,east:Math.max(...coords.map(c=>c.lon))+.0003,south:Math.min(...coords.map(c=>c.lat))-.0003,north:Math.max(...coords.map(c=>c.lat))+.0003});
   const lon=coords.reduce((a,q)=>a+q.lon,0)/coords.length,lat=coords.reduce((a,q)=>a+q.lat,0)/coords.length,q=project(lon,lat,b);
   const outline=coords.slice(0,-1).map(c=>project(c.lon,c.lat,b));const contour=outline.map(c=>new THREE.Vector2(c.x-q.x,-c.z+q.z));if(contour.length<3)return;
-  const heightTag=parseFloat(way.tags.height),levelTag=parseFloat(way.tags['building:levels']);
-  const realHeight=Number.isFinite(heightTag)?heightTag:Number.isFinite(levelTag)?levelTag*3:12;
-  const height=Math.min(90,Math.max(3,realHeight))/1000*1.8;
+  const heightEvidence=buildingHeight(way.tags),realHeight=heightEvidence.meters;
+  const height=heightEvidence.displayMeters/1000*1.8;
   const grounds=coords.map(c=>elevation(c.lon,c.lat));grounds.push(elevation(lon,lat));
   const base=Math.min(...grounds)-.002, ground=Math.max(...grounds)+.001, top=ground+height;
   const g=new THREE.ExtrudeGeometry(new THREE.Shape(contour),{depth:top-base,bevelEnabled:false,steps:1});g.rotateX(-Math.PI/2);
@@ -63,7 +63,7 @@ export async function createScene(container,getState,onSelect){
     windowVertices.push(x0,y,z0,x1,y,z1,x0,y+h,z0,x1,y,z1,x1,y+h,z1,x0,y+h,z0);
    }
   }
-  buildingMeta.push({id:way.id,lon,lat,type:way.tags.building,name:way.tags.name??'',sourceHeightMeters:realHeight,renderHeightMeters:height*1000,footprint:'OpenStreetMap',heightSource:Number.isFinite(heightTag)?'height tag':Number.isFinite(levelTag)?'levels × 3m assumed':'12m assumed'});
+  buildingMeta.push({id:way.id,lon,lat,type:way.tags.building,name:way.tags.name??'',sourceHeightMeters:realHeight,renderHeightMeters:height*1000,footprint:'OpenStreetMap',heightSource:heightEvidence.source==='height-tag'?'height tag':heightEvidence.source==='levels-assumed'?'levels × 3m assumed':'12m assumed'});
  }
 
 
