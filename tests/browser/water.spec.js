@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test.beforeEach(async({page})=>{await page.goto('');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true');});
+test.beforeEach(async({page})=>{await page.goto('?street=1');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true');});
 test('积水近景与主输入双向联动，零水深和数据异常正确',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
   await expect(page.locator('.water-panel')).toBeVisible();await expect(page.locator('#water-canvas canvas')).toBeVisible();

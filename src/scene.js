@@ -110,7 +110,7 @@ export async function createScene(container,getState,onSelect){
   for(const item of hazards){
    const n=state.states[item.id],m=markers.get(item.id),ring=rings.get(item.id),selected=item.id===state.selected,color=n.unknown?'#8f9692':levels[n.level].color;
    m.dot.material.color.set(color);m.dot.material.emissive.set(color);ring.material.color.set(color);
-   const patch=patches.get(item.id);patch.visible=!(selected&&['ice','wind','heat','forest','landslide','debris'].includes(item.id));patch.material.color.set(color);patch.material.opacity=n.unknown?.08:n.level===2?.3:n.level===1?.2:.09;
+   const patch=patches.get(item.id);patch.visible=item.id!=='water'&&state.selected!=='water'&&!(selected&&['ice','wind','heat','forest','landslide','debris'].includes(item.id));patch.material.color.set(color);patch.material.opacity=n.unknown?.08:n.level===2?.3:n.level===1?.2:.09;
    ring.scale.setScalar(selected?1.6:1+n.level*.65);ring.material.opacity=n.level&&!reduced?.4+Math.sin(performance.now()*.002)*.12:.4;
    m.group.scale.setScalar(Math.max(.025,Math.min(1,distance/30)));m.dot.scale.setScalar(selected?1.35:1);m.group.updateMatrixWorld(true);
    const label=labels.get(item.id);label.classList.toggle('selected',selected);label.lastElementChild.textContent=selected?(n.unknown?'数据未知':`${item.id==='lightning'?['无信号','模拟黄','模拟橙','模拟红'][Math.round(n.value)]:Number(n.value.toFixed(1))+item.unit} · ${n.level?'需核查':'模拟输入'}`):'';
