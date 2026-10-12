@@ -4,7 +4,7 @@ export function createHydraulicScene(container,data,z,channelWidth=48,{onPick=()
  const root=document.createElement('div');root.id='hydraulic-canvas';container.append(root);root.hidden=true;
  let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true});}catch{root.innerHTML='<p class="hydraulic-fallback">三维不可用；演算结果和观察点仍可在下方查看。</p>';return {setActive(v){root.hidden=!v},setAnimation(){},setPlayback(){},setEvidenceView(){},select(){},update(){},reset(){},focus(){},zoom(){},setMode(){},dispose(){root.remove()}};}
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor('#e8eee1');root.append(renderer.domElement);
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.001,30),controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=.12;controls.maxDistance=8;controls.maxPolarAngle=Math.PI*.48;
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.02,15),controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=.12;controls.maxDistance=8;controls.maxPolarAngle=Math.PI*.48;
  scene.add(new THREE.HemisphereLight('#f4f9ff','#80916a',1.6));const sun=new THREE.DirectionalLight('#fff5dc',2);sun.position.set(-2,3,1);scene.add(sun);
  const {nx,ny,dx}=data,N=nx*ny,width=(nx-1)*dx/1000,depth=(ny-1)*dx/1000,low=Math.min(...z),Y=h=>(h-low)/1000+.02;
  const terrain=new THREE.PlaneGeometry(width,depth,nx-1,ny-1);terrain.rotateX(-Math.PI/2);const p=terrain.attributes.position,colors=[];
