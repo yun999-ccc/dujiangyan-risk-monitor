@@ -101,10 +101,10 @@ export async function createScene(container,getState,onSelect){
  const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();let pointerStart;
  const navigation=createMapNavigation(controls,camera,renderer.domElement,{minDistance:.012,maxDistance:68,onChange:value=>{window.__mapNavigation=value;},bounds:{minX:-width/2,maxX:width/2,minZ:-depth/2,maxZ:depth/2},ground:(x,z)=>{const q=unproject(x,z,b);return elevation(q.lon,q.lat);},pickPoint:e=>{const r=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(mouse,camera);return raycaster.intersectObjects([buildings,bridgeInspection,terrainMesh],true)[0]?.point;}});
 
- renderer.domElement.addEventListener('pointerdown',e=>pointerStart={x:e.clientX,y:e.clientY});renderer.domElement.addEventListener('pointerup',e=>{if(e.button!==0||e.shiftKey||e.ctrlKey||e.metaKey||renderer.domElement.dataset.dragMode==='pan'||!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>6)return;const r=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObjects(pickables)[0];if(hit)onSelect(hit.object.userData.hazard);});renderer.domElement.addEventListener('pointercancel',()=>pointerStart=null);
+ renderer.domElement.addEventListener('pointerdown',e=>pointerStart={x:e.clientX,y:e.clientY});renderer.domElement.addEventListener('pointerup',e=>{if(e.button!==0||e.shiftKey||e.ctrlKey||e.metaKey||renderer.domElement.dataset.dragMode==='pan'||!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>6)return;const r=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObjects(pickables.filter(o=>o.parent?.visible!==false))[0];if(hit)onSelect(hit.object.userData.hazard);});renderer.domElement.addEventListener('pointercancel',()=>pointerStart=null);
  let disposed=false;let compact=false;let frames=0;const started=performance.now();window.__sceneMetrics={frames:0,buildingsVisible:buildings.visible&&buildings.children.length>0,roadsVisible:roads.visible,elapsedMs:0,drawCalls:0,triangles:0,labelCount:0,pixelRatio:renderer.getPixelRatio()};const resize=new ResizeObserver(()=>{const w=container.clientWidth,h=container.clientHeight;if(!w||!h)return;const nextCompact=w/h<1;if(nextCompact!==compact){camera.position.sub(controls.target).multiplyScalar(nextCompact?1.45:1/1.45).add(controls.target);compact=nextCompact;}renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()});resize.observe(container);
  const lightningLayer=createLightningLayer(scene,b,elevation,getState);
- const hazardLayer=createHazardEffectsLayer(scene,b,elevation,getState,container,roadBuilder);
+ const hazardLayer=createHazardEffectsLayer(scene,b,elevation,getState,container,roadBuilder,(x,z)=>!infrastructureMask(x,z)&&!waterBuilder.containsPolygon(x,z));
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const temp=new THREE.Vector3();
  function render(){
   if(disposed)return;requestAnimationFrame(render);if(document.hidden||container.classList.contains('hydraulic-active'))return;
@@ -119,15 +119,16 @@ export async function createScene(container,getState,onSelect){
   }
   for(const item of hazards){
    const n=state.states[item.id],m=markers.get(item.id),ring=rings.get(item.id),selected=item.id===state.selected,color=n.unknown?'#8f9692':levels[n.level].color;
+   const windClose=state.selected==='wind'&&distance<.3;m.group.visible=!windClose;ring.visible=!windClose;
    m.dot.material.color.set(color);m.dot.material.emissive.set(color);ring.material.color.set(color);
    const patch=patches.get(item.id);patch.visible=item.id!=='water'&&state.selected!=='water'&&!(selected&&['ice','wind','heat','forest','landslide','debris'].includes(item.id));patch.material.color.set(color);patch.material.opacity=n.unknown?.08:n.level===2?.3:n.level===1?.2:.09;
    ring.scale.setScalar(selected?1.6:1+n.level*.65);ring.material.opacity=n.level&&!reduced?.4+Math.sin(performance.now()*.002)*.12:.4;
    m.group.scale.setScalar(Math.max(.025,Math.min(1,distance/30)));m.dot.scale.setScalar(selected?1.35:1);m.group.updateMatrixWorld(true);
    const label=labels.get(item.id);label.classList.toggle('selected',selected);label.lastElementChild.textContent=selected?(n.unknown?'数据未知':`${item.id==='lightning'?['无信号','模拟黄','模拟橙','模拟红'][Math.round(n.value)]:Number(n.value.toFixed(1))+item.unit} · ${n.level?'需核查':'模拟输入'}`):'';
    const pos=m.dot.getWorldPosition(new THREE.Vector3());pos.y+=.02;
-   collect(label,pos,selected?10:6,(!compact||selected)&&!(distance<3&&selected&&item.id!=='water'));
+   collect(label,pos,selected?10:6,(!compact||selected)&&!(state.selected==='wind'&&distance<2&&!selected)&&!(distance<3&&selected&&item.id!=='water'));
   }
-  for(const item of geoLabels)collect(item.el,item.pos,item.nearOnly?7:3,(!item.nearOnly||distance<1.5)&&(!compact||distance<8)&&(item.nearOnly||distance<12||['岷江','龙溪河','白沙河','内江'].includes(item.name)));
+  for(const item of geoLabels)collect(item.el,item.pos,item.nearOnly?7:3,!(state.selected==='wind'&&distance<2)&&(!item.nearOnly||distance<1.5)&&(!compact||distance<8)&&(item.nearOnly||distance<12||['岷江','龙溪河','白沙河','内江'].includes(item.name)));
   const reserved=[{left:0,top:0,right:w,bottom:78},{left:w-62,top:78,right:w,bottom:252}];
   if(state.selected!=='water'&&distance<7)reserved.push({left:8,top:82,right:w-64,bottom:143});
   const placements=arrangeLabels(entries,w,h,reserved);
@@ -141,20 +142,25 @@ export async function createScene(container,getState,onSelect){
  function appearance(mode){const command=mode==='2d';renderer.setClearColor(command?'#12252c':'#e9efdf');scene.fog.color.set(command?'#12252c':'#e9efdf');floor.material.color.set(command?'#12252c':'#e9efdf');geom.setAttribute('color',new THREE.Float32BufferAttribute(command?commandColors:colors,3));contours.material.color.set(command?'#789784':'#456847');contours.material.opacity=command?.42:.25;for(const mesh of buildings.children)if(mesh.material)mesh.material.color.set(command?'#658980':'#ffffff');landCover.visible=!command;forest.visible=!command;sun.castShadow=!command;terrainMaterial.flatShading=false;terrainMaterial.needsUpdate=true;container.closest('.map-panel').classList.toggle('command',command);}
  function clearView(center,radius,y,preferred=null){
   controls.target.set(center.x,y,center.z);
-  const span=Math.max(.08,radius),fit=span/Math.sin(camera.fov*Math.PI/360)*1.16/Math.min(1,camera.aspect);
+  const span=Math.max(.012,radius),clearance=Math.min(.025,Math.max(.0005,span*.08)),fit=span/Math.sin(camera.fov*Math.PI/360)*1.16/Math.min(1,camera.aspect);
   if(getState().mode==='2d'){camera.position.copy(controls.target).add(new THREE.Vector3(0,fit,.001));}
   else {
    let best=null;const horizontal=fit*.56;
    for(let i=0;i<16;i++){const angle=i*Math.PI/8;if(preferred!==null&&Math.abs(Math.cos(angle-preferred))<.92)continue;const dx=Math.cos(angle)*horizontal,dz=Math.sin(angle)*horizontal;let rise=fit*.83;
-    for(let j=1;j<=16;j++){const t=j/16,location=unproject(center.x+dx*t,center.z+dz*t,b);rise=Math.max(rise,(elevation(location.lon,location.lat)+.025-y)/t);}
+    for(let j=1;j<=16;j++){const t=j/16,location=unproject(center.x+dx*t,center.z+dz*t,b);rise=Math.max(rise,(elevation(location.lon,location.lat)+clearance-y)/t);}
     if(!best||rise<best.rise)best={dx,dz,rise};
    }
    camera.position.copy(controls.target).add(new THREE.Vector3(best.dx,best.rise,best.dz));
   }controls.update();
  }
+ function focusWindDetail(kind='flag'){
+  const all=hazardLayer.windBounds,view=kind==='field'?all:all[kind]??all,direction=getState().states.wind.extra.direction*Math.PI/180;
+  clearView(view.center,view.radius,view.center.y,kind==='flag'?Math.atan2(-Math.sin(direction),-Math.cos(direction)):null);
+ }
  function focusEffect(id){
   reviewingBridge=false;const item=hazards.find(h=>h.id===id);if(!item)return;const origin=project(item.lon,item.lat,b);let q={...origin},radius={ice:.17,wind:.22,heat:.22,forest:.24,landslide:.16,debris:.11}[id]??.2;
   const height=(x,z)=>{const c=unproject(x,z,b);return elevation(c.lon,c.lat);};let targetY=height(q.x,q.z)+.025;
+  if(id==='wind'){focusWindDetail(getState().effectSettings?.wind?.view??'flag');return;}
   if(id==='ice'){const attachment=roadBuilder.nearestRoad(q.x,q.z);if(attachment){q={x:attachment.x,z:attachment.z};radius=.23;targetY=attachment.road.height(q.x,q.z)+.01;}}
   if(['landslide','debris'].includes(id)){
    const path=downhillPath(q,height,id==='debris'?50:18,.012),points=[...path];
@@ -166,7 +172,7 @@ export async function createScene(container,getState,onSelect){
   clearView(q,radius,targetY);
  }
 
- return {terrain,lightningExclusions,focusEffect,focusLightning(region,radius=1.2,framing='event'){
+ return {terrain,lightningExclusions,focusEffect,focusWindDetail,focusLightning(region,radius=1.2,framing='event'){
   const r=lightningRegions[region];if(!r)return;const display=getState().lightningDisplay,event=display?.event,location=event?.location;
   if(location&&framing!=='area'){const q=project(location.lon,location.lat,b),ground=elevation(location.lon,location.lat),shape=channelShape(event,getState().lightningSession?.config.style??'标准'),points=[...shape.points,...shape.branches.flat()],xs=points.map(p=>p.x),ys=points.map(p=>p.y),zs=points.map(p=>p.z);
    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),minZ=Math.min(...zs),maxZ=Math.max(...zs);

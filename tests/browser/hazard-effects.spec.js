@@ -4,7 +4,7 @@ const select=async(page,id)=>{await page.locator(`[data-hazard="${id}"]`).click(
 test('六类沙盘效果可见、参数改变且无运行错误',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
   for(const id of ['ice','wind','heat','forest','landslide','debris']){await select(page,id);await expect(page.locator('.effects-panel')).toBeVisible();await expect(page.locator('#effect-readings')).not.toBeEmpty();await expect(page.locator('.effect-map-label')).toContainText(/假定|示意|核查/);}
-  await select(page,'wind');await page.locator('#value-number').fill('30');await page.locator('#value-number').press('Tab');await page.locator('[data-key="direction"]').fill('90');await page.locator('[data-key="direction"]').press('Tab');await page.waitForFunction(()=>window.__hazardLayer.strength>.8&&window.__hazardLayer.direction===90);expect(errors).toEqual([]);
+  await select(page,'wind');await page.locator('#wind-speed-number').fill('30');await page.locator('#wind-speed-number').press('Tab');await page.locator('#wind-direction-number').fill('90');await page.locator('#wind-direction-number').press('Tab');await page.locator('#effect-seek').fill('10');await page.waitForFunction(()=>window.__hazardLayer.strength>.8&&window.__hazardLayer.direction===90);expect(errors).toEqual([]);
 });
 test('冰雪与林火证据门控，降低数值不会清除巡查记录',async({page})=>{
   await select(page,'ice');await page.locator('#value-number').fill('-8');await page.locator('#value-number').press('Tab');await page.locator('[data-key="surface"]').selectOption('有水');expect(await page.evaluate(()=>window.__hazardEffects.ice)).toBe(false);
