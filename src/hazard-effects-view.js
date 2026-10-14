@@ -43,7 +43,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   $('#effect-formation').onchange=e=>{const {c,p}=setup('ice');c.formation=e.target.checked;p.running=false;render();};
   $('#effect-fields').onchange=e=>{const id=getState().selected,f=effectFields[id].find(f=>f.key===e.target.dataset.effectKey);if(!f)return;if(e.target.value===''||!e.target.checkValidity()){toast('请输入范围内的假定参数');refresh();return;}const {c,p}=setup(id);c[f.key]=e.target.valueAsNumber;p.running=false;p.time=0;p.activated=false;render();};
   const boundaries={
-    ice:'路面点位、积雪厚度与覆盖率为假定。蓝白冰面来自巡查记录或主动启用的形成演示，不是结冰预测；湿度只作背景。动态仅演示冰面反光，不计算结冰或积雪增长速度。',
+    ice:'道路走向和编号来自OSM，节点移至XN19已收录路段；路面高程取公开DEM，未经测量。积雪仅覆盖该路段附近400米直径演示区，厚度与覆盖率为假定。蓝白冰面来自巡查记录或主动启用的形成演示，不是结冰预测；湿度只作背景。动态仅演示冰面反光，不计算结冰或积雪增长速度。',
     wind:'风向按气象来向表达，箭头指向吹去方向。风迹和设施摆动幅度是放大的视觉映射，不表示真实风场、受力或倒塌概率。',
     heat:'热色带仅表示当前点位温度的视觉映射，不是区域温度分布。湿度、时长和遮阴单独显示；热浪不是人体风险模型。',
     forest:'林地边界、树群与烟柱为示意。演示指数控制关注颜色，湿度控制枯干色调，背景风控制烟柱偏移；没有林火点火或蔓延模型。',

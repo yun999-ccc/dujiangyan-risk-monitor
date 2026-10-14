@@ -21,7 +21,7 @@ export function effectSnapshot(id,n,settings,time=0,activated=false) {
     result.ice=n.extra.inspection==='发现结冰'||(c.formation&&n.value<=0&&['有水','积雪'].includes(n.extra.surface));
     result.coverage=result.ice||result.snow>0?c.coverage/100:0;
     result.notes=[`${n.value}℃ · 表面湿度 ${n.secondary}% · ${n.extra.surface}`,result.ice?`冰面覆盖 ${c.coverage}%（手动假定），${n.extra.inspection==='发现结冰'?'巡查记录示意':'已主动启用形成演示'}`:'尚未确认冰面，低温只作核查提醒',`积雪厚度 ${result.snow} cm（假定）`];
-    result.legend=['蓝白斑块：冰面示意','白色点片：积雪示意'];
+    result.legend=['蓝白斑块：冰面示意','沿道路白色覆盖：积雪示意'];
   } else if(id==='wind') {
     result.strength=clamp(n.value/35,0,1);result.direction=((n.extra.direction%360)+360)%360;
     result.active=n.value>0&&n.secondary>0;

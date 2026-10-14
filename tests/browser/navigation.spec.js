@@ -1,10 +1,12 @@
 import {test,expect} from '@playwright/test';
+// Software GPU rendering of the full regional scene may exceed the default test budget.
+test.setTimeout(90000);
 const state=async(page,river=false)=>page.evaluate(r=>r?window.__riverNavigation:window.__mapNavigation,river);
 async function drag(page,canvas,button='left'){await canvas.scrollIntoViewIfNeeded();const b=await canvas.boundingBox(),x=b.x+b.width*.48,y=b.y+b.height*.65;await page.mouse.move(x,y);await page.mouse.down({button});await page.mouse.move(x+70,y-35,{steps:14});await page.mouse.up({button});await page.waitForTimeout(700);}
 test('城区自由旋转和平移，双击保留方向聚焦，近距离缩放与一键恢复',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('?area=city');await expect(page.locator('html')).toHaveAttribute('data-ready','true');await page.waitForFunction(()=>window.__mapNavigation);const canvas=page.locator('#canvas>canvas');let before=await state(page);await drag(page,canvas);let after=await state(page);expect(Math.abs(after.azimuth-before.azimuth)).toBeGreaterThan(.1);
  await page.locator('[data-map-drag="pan"]').click();before=await state(page);await drag(page,canvas);after=await state(page);expect(Math.hypot(after.target[0]-before.target[0],after.target[2]-before.target[2])).toBeGreaterThan(.001);expect(Math.abs(after.azimuth-before.azimuth)).toBeLessThan(.03);
- await page.locator('[data-region="city"]').click();await page.locator('[data-map-drag="rotate"]').click();await canvas.scrollIntoViewIfNeeded();const b=await canvas.boundingBox();before=await state(page);await page.mouse.dblclick(b.x+b.width*.5,b.y+b.height*.62);await page.waitForTimeout(350);after=await state(page);expect(after.distance).toBeLessThan(before.distance);expect(Math.abs(after.azimuth-before.azimuth)).toBeLessThan(.03);
+ await page.locator('[data-region="city"]').click();await page.locator('[data-map-drag="rotate"]').click();await canvas.scrollIntoViewIfNeeded();const b=await canvas.boundingBox();before=await state(page);await page.mouse.dblclick(b.x+b.width*.5,b.y+b.height*.62);await page.waitForFunction(d=>window.__mapNavigation.distance<d,before.distance);after=await state(page);expect(after.distance).toBeLessThan(before.distance);expect(Math.abs(after.azimuth-before.azimuth)).toBeLessThan(.03);
  for(let i=0;i<8;i++)await page.locator('#zoom-in').click();after=await state(page);expect(after.distance).toBeLessThan(.1);expect(after.near).toBeLessThan(.005);await page.locator('.map-panel').screenshot({path:'artifacts/navigation-city-detail.png'});await page.locator('#reset-camera').click();await page.waitForFunction(()=>window.__mapNavigation.distance>5);expect(errors).toEqual([]);
 });
 test('河段平移、方向键、俯视左键平移，数据刷新和重复选择不重置视角',async({page})=>{

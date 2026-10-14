@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+import {PNG} from 'pngjs';
+const pixels=(buffer,match)=>{const p=PNG.sync.read(buffer);let n=0;for(let y=150;y<p.height-20;y++)for(let x=0;x<p.width-70;x++){const i=(y*p.width+x)*4;if(match(p.data[i],p.data[i+1],p.data[i+2]))n++;}return n;};
+test.setTimeout(90000);
+test('积雪沿公开路段覆盖，零覆盖仍保留道路；桥水交叉可检查',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+ await page.setViewportSize({width:1440,height:1080});await page.goto('?risk=ice');await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+ await page.locator('[data-key="surface"]').selectOption('积雪');await page.locator('#effect-coverage').fill('100');await page.locator('#effect-coverage').press('Tab');await page.locator('#effect-snow').fill('40');await page.locator('#effect-snow').press('Tab');
+ await page.waitForFunction(()=>window.__hazardLayer?.roadBinding?.snowDepthMeters===.4&&window.__hazardEffects?.coverage===1);
+ const data=await page.evaluate(()=>({binding:window.__hazardLayer.roadBinding,map:window.__mapData}));
+ expect(data.binding.id).toBe(1240688954);expect(data.binding.distanceMeters).toBeLessThan(.01);expect(data.binding.widthMeters).toBeLessThan(12);expect(data.binding.verticalGapMeters).toBe(0);
+ expect(data.map.roadOffsetMeters).toBeLessThan(.1);expect(data.map.waterOffsetMeters).toBeLessThan(.01);expect(data.map.roadMeta.some(q=>q.structure==='bridge')).toBeTruthy();expect(data.map.roadMeta.some(q=>q.structure==='tunnel')).toBeTruthy();expect(data.map.crossings.some(q=>q.type==='unverified'&&!q.clearanceVerified)).toBeTruthy();
+ await page.locator('#effect-focus').click();await page.locator('#zoom-in').click({clickCount:3,delay:120});await page.locator('.map-panel').scrollIntoViewIfNeeded();await page.locator('.map-panel').screenshot({path:'artifacts/spatial-snow.png'});const white=(r,g,b)=>r>215&&g>215&&b>215;const covered=pixels(await page.locator('#canvas>canvas').screenshot(),white);expect(covered).toBeGreaterThan(500);
+ await page.locator('#effect-coverage').fill('0');await page.locator('#effect-coverage').press('Tab');await page.waitForFunction(()=>window.__hazardEffects?.coverage===0&&window.__hazardLayer?.coverage===0);expect(await page.evaluate(()=>window.__mapData.roadCount)).toBe(data.map.roadCount);const dry=pixels(await page.locator('#canvas>canvas').screenshot(),white);expect(dry).toBeLessThan(covered*.2);
+ await page.locator('#effect-coverage').fill('45');await page.locator('#effect-coverage').press('Tab');await page.locator('#effect-snow').fill('8');await page.locator('#effect-snow').press('Tab');await page.waitForFunction(()=>window.__hazardLayer?.roadBinding?.snowDepthMeters===.08);await page.locator('.map-panel').screenshot({path:'artifacts/spatial-snow-patches.png'});
+ await page.locator('[data-region="bridge"]').click();await page.waitForFunction(()=>window.__mapData?.bridgeReview);await page.locator('.map-panel').screenshot({path:'artifacts/spatial-bridge.png'});const blue=pixels(await page.locator('#canvas>canvas').screenshot(),(r,g,b)=>r<100&&g>90&&b>110&&b>g*.8);expect(blue).toBeGreaterThan(500);
+ await page.locator('.map-context summary').click();await expect(page.locator('#map-relations')).toContainText('待核实');await page.locator('.map-context summary').click();
+ await page.locator('[data-region="city"]').click();await page.locator('.map-panel').screenshot({path:'artifacts/spatial-city.png'});
+ await page.setViewportSize({width:390,height:844});await page.locator('[data-hazard="ice"]').click();await page.locator('#effect-focus').click();await page.locator('.map-panel').scrollIntoViewIfNeeded();await page.locator('.map-panel').screenshot({path:'artifacts/spatial-mobile.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);expect(errors).toEqual([]);
+});

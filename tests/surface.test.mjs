@@ -30,5 +30,5 @@ test('道路内部细分跨越折面山脊，面片不穿入地形',()=>{
       const {lon,lat}=unproject(x,z,bounds);assert.ok(y>elevation(lon,lat),`road buried at ${x},${z}`);
     }
   }
-  mesh.geometry.dispose();mesh.material.dispose();
+  mesh.geometry.dispose();if(Array.isArray(mesh.material))mesh.material.forEach(m=>m.dispose());else mesh.material.dispose();
 });

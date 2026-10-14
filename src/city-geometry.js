@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {project, unproject} from './model.js';
+import {clipPolyline,densify,nearestOnPath,corridor} from './spatial-geometry.js';
 import {parseLengthMeters} from './geometry-audit.js';
 
 // Sample the same diagonal as PlaneGeometry, so thin road ribbons stay on the mesh.
@@ -27,71 +28,53 @@ export function roadProfile(tags, mountain=false) {
     widthSource:Number.isFinite(supplied)&&supplied>0?'OSM width':Number.isFinite(lanes)&&lanes>0?'lanes estimate':'class estimate'};
 }
 
-// All ribbons are batched into a single colored mesh; no elevated road tubes.
-export function createRoadBuilder(bounds, elevation, liftScale=1, mountainOverride=null,{mountainColor='#85887d',mountainCurbColor='#a5a794'}={}) {
-  const positions=[], colors=[], metadata=[];
-  const mountainTint=new THREE.Color('#85887d');
+// Preserve road identity alongside batching: effects attach to these exact asphalt faces.
+export function createRoadBuilder(bounds,elevation,liftScale=1,mountainOverride=null,{mountainColor='#85887d',mountainCurbColor='#a5a794',grid=null}={}) {
+  const positions=[[],[],[]],colors=[[],[],[]],metadata=[],records=[],structures=new THREE.Group(),railVertices=[],tunnelVertices=[];
   const ground=(x,z)=>{const geo=unproject(x,z,bounds);return elevation(geo.lon,geo.lat);};
-  // Refine inside each ribbon, not just its edges. A coarse face can cut through
-  // a terrain ridge even when its four corners sit above the terrain.
-  function triangle(a,b,c,color,offset,depth=0) {
-    const midpoint=(p,q)=>{const x=(p[0]+q[0])/2,z=(p[2]+q[2])/2;return [x,ground(x,z)+offset,z];};
-    const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
-    const x=(a[0]+b[0]+c[0])/3,z=(a[2]+b[2]+c[2])/3;
-    const error=Math.max(Math.abs(ab[1]-(a[1]+b[1])/2),Math.abs(bc[1]-(b[1]+c[1])/2),Math.abs(ca[1]-(c[1]+a[1])/2),Math.abs(ground(x,z)+offset-(a[1]+b[1]+c[1])/3));
-    if(error>.0005*liftScale&&depth<6){
-      triangle(a,ab,ca,color,offset,depth+1);triangle(ab,b,bc,color,offset,depth+1);
-      triangle(ca,bc,c,color,offset,depth+1);triangle(ab,bc,ca,color,offset,depth+1);return;
-    }
-    for(const p of [a,b,c]){
-      positions.push(...p);
-      const tint=color.clone();
-      // Gradual valley-to-mountain tint also covers roads that cross both zones.
-      if(color.getHexString()==='42484b')tint.lerp(mountainTint,THREE.MathUtils.smoothstep(p[1]-offset,.28,.60));
-      colors.push(tint.r,tint.g,tint.b);
+  const pavementOffset=.00005*liftScale;
+  function strip(points,width,height,color,style=null,splitGrid=grid){
+    const c=new THREE.Color(color),category=style==='curb'?0:style==='marking'?2:1;
+    corridor(points,width,height,(...vertices)=>{for(const p of vertices){positions[category].push(...p);colors[category].push(c.r,c.g,c.b);}}, {tolerance:Math.max(.0000002,pavementOffset*.2),grid:splitGrid});
+  }
+  function add(way){
+    const parts=clipPolyline(way.geometry,bounds),tags=way.tags??{};
+    const bridge=!!tags.bridge&&tags.bridge!=='no',tunnel=(!!tags.tunnel&&tags.tunnel!=='no')||tags.covered==='yes';
+    for(const [partIndex,coords] of parts.entries()){
+      const heights=coords.map(q=>elevation(q.lon,q.lat)).sort((a,b)=>a-b),mountain=mountainOverride??(heights[Math.floor(heights.length/2)]>.72);
+      const profile=roadProfile(tags,mountain),points=densify(coords.map(q=>project(q.lon,q.lat,bounds)),.025);
+      if(mountain&&!profile.walking&&tags.highway!=='track')profile.color=mountainColor;
+      const nearest=(x,z)=>nearestOnPath(points,x,z),length=points.slice(1).reduce((s,q,i)=>s+Math.hypot(q.x-points[i].x,q.z-points[i].z),0);
+      const start=points[0],end=points.at(-1),ha=ground(start.x,start.z),hb=ground(end.x,end.z);
+      // Bridge decks use a disclosed endpoint grade, never a surveyed clearance.
+      const deck=(x,z)=>bridge?ha+(hb-ha)*(nearest(x,z)?.along??0)/Math.max(length,1e-9):ground(x,z);
+      const height=(x,z)=>deck(x,z)+pavementOffset;
+      const endpointKind=q=>[Math.abs(q.lon-bounds.west),Math.abs(q.lon-bounds.east),Math.abs(q.lat-bounds.south),Math.abs(q.lat-bounds.north)].some(d=>d<1e-10)?'map-boundary':'source-way-end; connectivity unverified';
+      const meta={startKind:endpointKind(coords[0]),endKind:endpointKind(coords.at(-1)),id:way.id,part:partIndex,kind:tags.highway,name:tags.name??tags.ref??'',widthMeters:profile.width*1000,widthSource:profile.widthSource,mountain,color:profile.color,structure:tunnel?'tunnel':bridge?'bridge':'surface',layer:tags.layer??null,ford:tags.ford??null,elevationSource:bridge?'endpoint grade assumed; clearance unverified':'DEM surface; road elevation unverified',start:coords[0],end:coords.at(-1),lengthMeters:length*1000};
+      if(tunnel){
+        for(let i=1;i<points.length;i++)for(const q of [points[i-1],points[i]])tunnelVertices.push(q.x,ground(q.x,q.z)+.0001*liftScale,q.z);
+      }else{
+        if(!profile.walking)strip(points,profile.width+(mountain?.001:.0024),(x,z)=>deck(x,z)+pavementOffset*.55,mountain?mountainCurbColor:'#b9b5a5','curb',bridge?null:grid);
+        strip(points,profile.width,height,profile.color,null,bridge?null:grid);
+        if(profile.major&&!mountain)for(let i=1;i<points.length;i+=2){const a=points[i-1],b=points[i];strip([a,{x:a.x+(b.x-a.x)*.45,z:a.z+(b.z-a.z)*.45}],.00035,(x,z)=>height(x,z)+.000005*liftScale,'#ebd08a','marking',bridge?null:grid);}
+        if(bridge){
+          const q=points.map((p,i)=>{const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)],len=Math.hypot(b.x-a.x,b.z-a.z)||1;return {...p,nx:-(b.z-a.z)/len,nz:(b.x-a.x)/len};});
+          for(const sign of [-1,1]){const edge=q.map(p=>{const x=p.x+sign*p.nx*profile.width/2,z=p.z+sign*p.nz*profile.width/2;return [x,height(x,z)+.0008,z];});for(let i=1;i<edge.length;i++)for(const p of [edge[i-1],edge[i]])railVertices.push(...p);}
+
+        }
+      }
+      metadata.push(meta);records.push({...meta,points,height,width:profile.width,geometry(){const data=[];corridor(points,profile.width,height,(...vertices)=>vertices.forEach(p=>data.push(...p)),{grid:bridge?null:grid,tolerance:Math.max(.0000002,pavementOffset*.2)});return new Float32Array(data);}});
     }
   }
-  function strip(points, width, offset, color) {
-    const c=new THREE.Color(color);
-    const pairs=points.map((q,i)=>{
-      const prev=points[Math.max(0,i-1)],next=points[Math.min(points.length-1,i+1)];
-      const direction=(a,b)=>{const len=Math.hypot(b.x-a.x,b.z-a.z)||1;return {x:(b.x-a.x)/len,z:(b.z-a.z)/len};};
-      const incoming=i?direction(prev,q):direction(q,next),outgoing=i<points.length-1?direction(q,next):incoming;
-      let nx=-incoming.z-outgoing.z,nz=incoming.x+outgoing.x;
-      const len=Math.hypot(nx,nz);if(len<.001){nx=-outgoing.z;nz=outgoing.x;}else{nx/=len;nz/=len;}
-      // Bounded miter joins keep bends joined without long spikes at hairpins.
-      const reach=width/2/Math.max(.625,Math.abs(nx*(-outgoing.z)+nz*outgoing.x));
-      return [-1,1].map(side=>{const x=q.x+nx*reach*side,z=q.z+nz*reach*side;return [x,ground(x,z)+offset,z];});
-    });
-    for(let i=1;i<pairs.length;i++){
-      const [a,b]=pairs[i-1],[c2,d]=pairs[i];
-      triangle(a,b,c2,c,offset);triangle(b,d,c2,c,offset);
+  function mesh(){
+    for(const [vertices,material] of [[railVertices,new THREE.LineBasicMaterial({color:'#c4c9bf'})],[tunnelVertices,new THREE.LineDashedMaterial({color:'#b09a78',dashSize:.008,gapSize:.005})]]){
+      if(!vertices.length){material.dispose();continue;}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const line=new THREE.LineSegments(geometry,material);if(material.isLineDashedMaterial)line.computeLineDistances();structures.add(line);vertices.length=0;
     }
+    const count=positions.reduce((sum,p)=>sum+p.length,0),p=new Float32Array(count),c=new Float32Array(count),g=new THREE.BufferGeometry();let offset=0;
+    for(let i=0;i<3;i++){p.set(positions[i],offset);c.set(colors[i],offset);g.addGroup(offset/3,positions[i].length/3,i);offset+=positions[i].length;positions[i].length=colors[i].length=0;}
+    g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3));g.computeVertexNormals();
+    const materials=[-1,-2,-3].map(factor=>new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:factor,polygonOffsetUnits:factor}));return new THREE.Mesh(g,materials);
   }
-  function add(way) {
-    const coords=way.geometry.filter(q=>q.lon>=bounds.west&&q.lon<=bounds.east&&q.lat>=bounds.south&&q.lat<=bounds.north);
-    if(coords.length<2)return;
-    // This is a display classification from the DEM, not a surveyed road surface.
-    const heights=coords.map(q=>elevation(q.lon,q.lat)).sort((a,b)=>a-b);
-    const mountain=mountainOverride??(heights[Math.floor(heights.length/2)]>.72);
-    const profile=roadProfile(way.tags,mountain), points=[];if(mountain&&!profile.walking&&way.tags.highway!=='track')profile.color=mountainColor;
-    for(let i=1;i<coords.length;i++){
-      const a=project(coords[i-1].lon,coords[i-1].lat,bounds),b=project(coords[i].lon,coords[i].lat,bounds);
-      const count=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.006));
-      for(let j=0;j<count;j++){const t=j/count;points.push({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});}
-    }
-    points.push(project(coords.at(-1).lon,coords.at(-1).lat,bounds));
-    if(!profile.walking)strip(points,profile.width+(mountain?.001:.0024),.0014*liftScale,mountain?mountainCurbColor:'#b9b5a5');
-    strip(points,profile.width,.0018*liftScale,profile.color);
-    if(profile.major&&!mountain){
-      // Illustrative road markings; not surveyed lane geometry.
-      for(let i=1;i<points.length;i+=2){const a=points[i-1],b=points[i];if(ground(a.x,a.z)>.28)continue;strip([a,{x:a.x+(b.x-a.x)*.45,z:a.z+(b.z-a.z)*.45}],.00035,.0022*liftScale,'#ebd08a');}
-    }
-    metadata.push({id:way.id,kind:way.tags.highway,widthMeters:profile.width*1000,widthSource:profile.widthSource,mountain,color:profile.color});
-  }
-  function mesh() {
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-    const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));return m;
-  }
-  return {add,mesh,metadata};
+  function nearestRoad(x,z){let best=null;for(const road of records){if(road.structure!=='surface'||['path','footway','steps','track','cycleway'].includes(road.kind))continue;const q=nearestOnPath(road.points,x,z);if(q&&(!best||q.distance<best.distance))best={road,...q};}return best;}
+  return {add,mesh,metadata,records,structures,nearestRoad,pavementOffset};
 }

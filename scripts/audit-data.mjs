@@ -13,7 +13,7 @@ const files=['terrain','osm','hydraulic'].map(id=>({id,path:`data/${id}.json`,sh
 const report={version:1,scope:'龙溪河黄央沟邻近片区：几何数据核查',files,
  terrain:{source:terrain.source,url:terrain.url,downloaded:terrain.downloaded,size:terrain.size,bounds:terrain.bounds,tileZoom:terrain.tileZoom,spacingMeters:terrainSpacing(terrain),verticalDatum:'当前打包资料没有逐瓦片高程基准和来源映射，尚未核实',accuracyMeters:null},
  buildings:{total:buildings.length,heightSources,fieldVerified:0,note:'标签是公开地图记录；楼层按3m换算和默认12m均为假定，标签高度也未现场核验。展示另有限高和基座处理。'},
- locations:hazards.map(h=>({id:h.id,name:h.name,lon:h.lon,lat:h.lat,fieldVerified:false,source:h.id==='debris'?'2014年黄央沟文献沟口坐标，基准未注明；不是现时影响边界':'示意布置，未现场核实'})),
+ locations:hazards.map(h=>({id:h.id,name:h.name,lon:h.lon,lat:h.lat,fieldVerified:false,source:h.id==='debris'?'2014年黄央沟文献沟口坐标，基准未注明；不是现时影响边界':h.id==='ice'?'OSM路段1240688954折点；监测节点与状态为假定，未现场核实':'示意布置，未现场核实'})),
  river:{bounds:river.bounds,grid:{nx:river.nx,ny:river.ny,dx:river.dx},centerline:{id:river.riverId,url:`https://www.openstreetmap.org/way/${river.riverId}`},roads:river.roads.length,buildings:river.buildings.length,bridgeRoads:river.roads.filter(r=>r.tags.bridge&&r.tags.bridge!=='no').map(r=>r.id),defaultParameters:defaults,modification:geometryDifference(river,geometry(river).z)},
  requirements:[
  {id:'ground',name:'岸外裸土地形与高程基准',required:true,status:'unverified',detail:'已有公开高程，尚未核实当地垂直精度、裸土属性和统一高程基准。'},

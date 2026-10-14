@@ -3,7 +3,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {hazards,project,unproject} from './model.js';
 import {effectIds,effectSettings,effectSnapshot,downhillPath} from './hazard-effects-model.js';
 
-export function createHazardEffectsLayer(scene,bounds,elevation,getState,container) {
+export function createHazardEffectsLayer(scene,bounds,elevation,getState,container,roadBuilder) {
   const group=new THREE.Group();scene.add(group);let key='',live={},path=[],pathLength=0,currentId='';
   const label=document.createElement('div');label.className='effect-map-label';container.append(label);label.hidden=true;
   const v=new THREE.Vector3(),height=(x,z)=>{const p=unproject(x,z,bounds);return elevation(p.lon,p.lat);};
@@ -32,19 +32,32 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
     clear();currentId=id;path=[];pathLength=0;const h=hazards.find(h=>h.id===id),q=project(h.lon,h.lat,bounds),c=snap.settings;
     group.position.set(0,0,0);live.center=point(q.x,q.z,.09);
     if(id==='ice') {
-      const road=new THREE.PlaneGeometry(.05,.28,8,48);road.rotateX(-Math.PI/2);const p=road.attributes.position;for(let i=0;i<p.count;i++){p.setX(i,p.getX(i)+q.x);p.setZ(i,p.getZ(i)+q.z);p.setY(i,height(p.getX(i),p.getZ(i))+.004);}mesh(road,mat('#606c69',.9));
-      for(let i=0;i<16;i++){const z=q.z-.13+i*.017;line([point(q.x-.002,z,.005),point(q.x-.002,z+.008,.005)],'#e4dfca');}
-      const iceGeometries=[],snowGeometries=[];
-      if(snap.ice||snap.snow>0)for(let i=0;i<100;i++){if(((i*37)%100)/100>=snap.coverage)continue;const x=q.x-.022+(i%5)*.011,z=q.z-.135+Math.floor(i/5)*.014;
-        const g=new THREE.CircleGeometry(.006,6);g.rotateX(-Math.PI/2);const p=g.attributes.position;for(let j=0;j<p.count;j++){p.setX(j,p.getX(j)+x);p.setZ(j,p.getZ(j)+z);p.setY(j,height(p.getX(j),p.getZ(j))+.006);}g.computeVertexNormals();iceGeometries.push(g);
-        if(snap.snow>0){
-          const snow=new THREE.CircleGeometry(.0065,8);snow.rotateX(-Math.PI/2);const sp=snow.attributes.position;
-          for(let j=0;j<sp.count;j++){const spread=j===0?1:.85+.16*Math.sin(i*7+j*13),px=x+sp.getX(j)*spread,pz=z+sp.getZ(j)*spread;sp.setXYZ(j,px,height(px,pz)+.007+snap.snow/100000,pz);}
-          snow.computeVertexNormals();snowGeometries.push(snow);
+      const attachment=roadBuilder?.nearestRoad(q.x,q.z);
+      if(!attachment||attachment.distance>.1){live.caption='公开道路未覆盖该节点 · 不生成假路';live.roadBinding=null;}
+      else {
+        const road=attachment.road,center=new THREE.Vector2(attachment.x,attachment.z),radius=.2;
+        live.center.set(center.x,road.height(center.x,center.y)+.002,center.y);
+        live.roadBinding={id:road.id,part:road.part,name:road.name,distanceMeters:attachment.distance*1000,widthMeters:road.widthMeters,lengthMeters:road.lengthMeters,surfaceSource:road.elevationSource,scopeMeters:400,snowDepthMeters:snap.snow/100,verticalGapMeters:0};
+        if(snap.coverage>0&&(snap.ice||snap.snow>0)){
+          // Copy the exact rendered asphalt triangles. No separate road and no metre-scale lift.
+          const geometry=new THREE.BufferGeometry();
+          const vertices=road.geometry(),rise=snap.snow/100000;
+          for(let i=1;i<vertices.length;i+=3)vertices[i]+=rise;
+          geometry.setAttribute('position',new THREE.BufferAttribute(vertices,3));geometry.computeVertexNormals();
+          const material=new THREE.ShaderMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,uniforms:{center:{value:center},radius:{value:radius},coverage:{value:snap.coverage},tint:{value:new THREE.Color(snap.snow>0?'#f5fafb':'#b8e6ef')},phase:{value:0}},vertexShader:'varying vec2 groundPosition;void main(){groundPosition=position.xz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec2 groundPosition;uniform vec2 center;uniform float radius,coverage,phase;uniform vec3 tint;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
+void main(){if(distance(groundPosition,center)>radius||coverage<=0.)discard;
+// Rank a smooth noise field so coverage endpoints are exactly dry/full.
+float n=noise(groundPosition*900.);float rank=smoothstep(.12,.88,n);if(coverage<1.&&rank>coverage)discard;
+float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*1000.-phase);gl_FragColor=vec4(tint*(.97+reflection),1.);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+}`});
+          const overlay=mesh(geometry,material);if(snap.ice&&snap.snow===0)live.ice=overlay;
         }
+        live.caption=`${road.name||'山区道路'} · OSM路段 ${road.id} · ${snap.snow>0?'积雪 '+snap.snow+' cm':snap.ice?'冰面覆盖':'路面核查'}（假定）`;
       }
-      for(const [geometries,color,opacity] of [[iceGeometries,snap.ice?'#b8e6ef':'#f7fbfd',snap.ice?.78:.94],[snowGeometries,'#f5fafb',1]])if(geometries.length){const m=mesh(mergeGeometries(geometries),mat(color,opacity));if(geometries===iceGeometries&&snap.ice)live.ice=m;geometries.forEach(g=>g.dispose());}
-      live.caption=snap.ice?'冰面 · 路段与覆盖为假定':snap.snow>0?'积雪 · 厚度与范围为假定':'路面待核查 · 未确认结冰';
     } else if(id==='wind') {
       // Meteorological direction is where wind comes FROM; x east, z south.
       const a=snap.direction*Math.PI/180,dir=new THREE.Vector3(-Math.sin(a),0,Math.cos(a));
@@ -114,7 +127,7 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
     const cacheKey=JSON.stringify([id,snap.input,snap.settings]);
     if(key!==cacheKey){key=cacheKey;build(id,snap.input,snap);}
     const time=snap.time??0,moving=p.running&&!snap.unknown&&snap.motion;
-    if(live.ice)live.ice.material.color.set('#9ccddc').lerp(new THREE.Color('#dff7fc'),.5+.25*Math.sin(time*.7));
+    if(live.ice)live.ice.material.uniforms.phase.value=time*.7;
     if(live.trails)for(let i=0;i<live.trails.length;i++){const {m}=live.trails[i];m.position.copy(live.dir).multiplyScalar(((time*(id==='wind'?(.03+snap.strength*.14):.03+snap.wind*.004)+i*.027)%.24)-.12);}
     if(live.flags)for(let i=0;i<live.flags.length;i++)live.flags[i].rotation.z=(snap.active?snap.strength:0)*Math.sin(time*4+i)*.25;
     if(live.heat)for(let i=0;i<live.heat.length;i++)live.heat[i].position.x=Math.sin(time*2+i)*.006*snap.strength;
@@ -129,7 +142,7 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
     const caption=snap.unknown?'数据未知 · 冻结最后有效示意':`${live.caption}${['landslide','debris'].includes(id)&&!snap.activated?' · 尚未启动运动':''}`;
     v.copy(live.center).project(camera);label.hidden=v.z>1||Math.abs(v.x)>1||Math.abs(v.y)>1;label.textContent=caption;label.style.left=`${(v.x*.5+.5)*container.clientWidth}px`;label.style.top=`${(-v.y*.5+.5)*container.clientHeight}px`;
     let soilInFrame=true;if(live.soil?.visible){live.soil.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(live.soil);for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);if(Math.abs(p.x)>.98||Math.abs(p.y)>.98||p.z>1)soilInFrame=false;}}
-    window.__hazardLayer={soilInFrame,id,visible:true,caption,moving,time,ice:snap.ice,snow:snap.snow,smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
+    window.__hazardLayer={soilInFrame,id,visible:true,caption,roadBinding:live.roadBinding??null,moving,time,ice:snap.ice,snow:snap.snow,coverage:snap.coverage,smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
   }
   return {update,dispose(){label.remove();clear();scene.remove(group);}};
 }
