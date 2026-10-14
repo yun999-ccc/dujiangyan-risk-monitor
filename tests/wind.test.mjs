@@ -24,6 +24,6 @@ test('播放中改风速来向两秒过渡，位移连续且拖动可重现历�
  p.running=false;p.time=14;syncWindHistory(p,windConfig(node(15,180)));assert.equal(windFrame(node(15,180),{},14,true,p.windHistory).direction,180);
 });
 test('旗布固定边缘不随风移动，零风时旗布与树冠不随时间摆动',()=>{
- for(const v of [0,.5,1])for(const speed of [0,5,30]){const f=windFrame(node(speed),{},10,true),p=flagVertex(0,v,0,f);assert.equal(p.along,0);assert.equal(p.side,0);assert.equal(p.y,-.003*v);}
+ for(const v of [0,.5,1])for(const speed of [0,5,30]){const f=windFrame(node(speed),{},10,true),p=flagVertex(0,v,0,f);assert.equal(p.along,0);assert.equal(p.side,0);assert.ok(p.y===-.003*v);}
  const a=windFrame(node(0),{},5,true),b=windFrame(node(0),{},15,true);assert.deepEqual(flagVertex(1,.5,0,a),flagVertex(1,.5,0,b));assert.deepEqual(treeResponse(0,a),treeResponse(0,b));
 });
