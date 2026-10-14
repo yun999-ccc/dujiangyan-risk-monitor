@@ -26,7 +26,7 @@ export function createRegionalWater(bounds,elevation,{terrainGeometry=null,grid=
   }
   function mesh(){
     const group=new THREE.Group(),geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();
-    const material=()=>new THREE.MeshBasicMaterial({color:'#3895aa',side:THREE.DoubleSide});
+    const material=()=>new THREE.MeshBasicMaterial({color:'#3895aa',side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:0,polygonOffsetUnits:-2});
     if(positions.length)group.add(new THREE.Mesh(geometry,material()));
     // Water polygons use the exact terrain triangles, with a geographic mask.
     // This avoids large polygon faces cutting across valleys or runaway subdivision.
@@ -49,5 +49,8 @@ export function createRegionalWater(bounds,elevation,{terrainGeometry=null,grid=
     }
     group.userData.waterSurface='geographic terrain footprint';return group;
   }
-  return {add,mesh,metadata,records,offset};
+  function containsPolygon(x,z){
+    const q=unproject(x,z,bounds);for(const polygon of polygons){let inside=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){const a=polygon[i],b=polygon[j];if((a.lat>q.lat)!==(b.lat>q.lat)&&q.lon<(b.lon-a.lon)*(q.lat-a.lat)/(b.lat-a.lat)+a.lon)inside=!inside;}if(inside)return true;}return false;
+  }
+  return {add,mesh,metadata,records,offset,containsPolygon};
 }

@@ -17,3 +17,13 @@ export function roadWaterCrossings(roads,waters){
   }
   return result;
 }
+
+// Decorative vegetation must not occupy road or mapped-water footprints.
+export function corridorMask(records,margin=.025){
+  const buckets=new Map(),size=.1;
+  for(const record of records)for(let i=1;i<record.points.length;i++){
+    const a=record.points[i-1],b=record.points[i],radius=record.width/2+margin;
+    for(let x=Math.floor((Math.min(a.x,b.x)-radius)/size);x<=Math.floor((Math.max(a.x,b.x)+radius)/size);x++)for(let z=Math.floor((Math.min(a.z,b.z)-radius)/size);z<=Math.floor((Math.max(a.z,b.z)+radius)/size);z++){const k=`${x}:${z}`;if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push({a,b,radius});}
+  }
+  return (x,z)=>{for(const {a,b,radius} of buckets.get(`${Math.floor(x/size)}:${Math.floor(z/size)}`)??[]){const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1)));if(Math.hypot(x-a.x-t*dx,z-a.z-t*dz)<radius)return true;}return false;};
+}

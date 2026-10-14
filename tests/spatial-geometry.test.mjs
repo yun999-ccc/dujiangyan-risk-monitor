@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {clipPolyline,clipPolygon,gridSurfaceTriangle} from '../src/spatial-geometry.js';
 import {createRoadBuilder,surfaceHeight} from '../src/city-geometry.js';
 import {project,unproject} from '../src/model.js';
-import {roadWaterCrossings} from '../src/asset-relations.js';
+import {roadWaterCrossings,corridorMask} from '../src/asset-relations.js';
 const bounds={west:0,east:1,south:0,north:1};
 test('跨区道路两端都在区外仍保留边界交点',()=>assert.deepEqual(clipPolyline([{lon:-1,lat:.5},{lon:2,lat:.5}],bounds),[[{lon:0,lat:.5},{lon:1,lat:.5}]]));
 test('道路出界再入界不会伪造区内连线',()=>{const parts=clipPolyline([{lon:.2,lat:.2},{lon:2,lat:.2},{lon:2,lat:.8},{lon:.2,lat:.8}],bounds);assert.equal(parts.length,2);assert.equal(parts[0].at(-1).lon,1);assert.equal(parts[1][0].lon,1);assert.equal(parts[0].at(-1).lat,.2);assert.equal(parts[1][0].lat,.8);});
@@ -25,3 +25,5 @@ test('道路水系交叉按桥梁标签区分，普通交叉保持未核实，�
  const points=[{x:-.1,z:0},{x:.1,z:0}],roads=[{id:1,structure:'bridge',points,height:()=>.1},{id:2,structure:'surface',points,height:()=>.01}],waters=[{id:4,points:[{x:0,z:-.1},{x:0,z:.1}],height:()=>0}];
  const crossings=roadWaterCrossings(roads,waters);assert.deepEqual(crossings.map(c=>c.type),['bridge','unverified']);assert.ok(crossings.every(c=>c.clearanceVerified===false));assert.equal(crossings[0].displaySeparationMeters,100);
 });
+
+test('装饰树避让道路水系及树冠余量，但不误遮整个邻近山体',()=>{const blocked=corridorMask([{width:.01,points:[{x:-.1,z:0},{x:.1,z:0}]}],.015);assert.equal(blocked(0,.019),true);assert.equal(blocked(0,.025),false);assert.equal(blocked(.15,0),false);});
