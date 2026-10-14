@@ -142,7 +142,7 @@ export async function createScene(container,getState,onSelect){
  function appearance(mode){const command=mode==='2d';renderer.setClearColor(command?'#12252c':'#e9efdf');scene.fog.color.set(command?'#12252c':'#e9efdf');floor.material.color.set(command?'#12252c':'#e9efdf');geom.setAttribute('color',new THREE.Float32BufferAttribute(command?commandColors:colors,3));contours.material.color.set(command?'#789784':'#456847');contours.material.opacity=command?.42:.25;for(const mesh of buildings.children)if(mesh.material)mesh.material.color.set(command?'#658980':'#ffffff');landCover.visible=!command;forest.visible=!command;sun.castShadow=!command;terrainMaterial.flatShading=false;terrainMaterial.needsUpdate=true;container.closest('.map-panel').classList.toggle('command',command);}
  function clearView(center,radius,y,preferred=null){
   controls.target.set(center.x,y,center.z);
-  const span=Math.max(.012,radius),clearance=Math.min(.025,Math.max(.0005,span*.08)),fit=span/Math.sin(camera.fov*Math.PI/360)*1.16/Math.min(1,camera.aspect);
+  const span=Math.max(.008,radius),clearance=Math.min(.025,Math.max(.0005,span*.08)),fit=span/Math.sin(camera.fov*Math.PI/360)*1.16/Math.min(1,camera.aspect);
   if(getState().mode==='2d'){camera.position.copy(controls.target).add(new THREE.Vector3(0,fit,.001));}
   else {
    let best=null;const horizontal=fit*.56;
@@ -153,9 +153,9 @@ export async function createScene(container,getState,onSelect){
    camera.position.copy(controls.target).add(new THREE.Vector3(best.dx,best.rise,best.dz));
   }controls.update();
  }
- function focusWindDetail(kind='flag'){
+ function focusWindDetail(kind='flag',angle='front'){
   const all=hazardLayer.windBounds,view=kind==='field'?all:all[kind]??all,direction=getState().states.wind.extra.direction*Math.PI/180;
-  clearView(view.center,view.radius,view.center.y,kind==='flag'?Math.atan2(-Math.sin(direction),-Math.cos(direction)):null);
+  clearView(view.center,view.radius,view.center.y,kind==='flag'?Math.atan2(-Math.sin(direction),-Math.cos(direction))+(angle==='side'?Math.PI/2:0):null);
  }
  function focusEffect(id){
   reviewingBridge=false;const item=hazards.find(h=>h.id===id);if(!item)return;const origin=project(item.lon,item.lat,b);let q={...origin},radius={ice:.17,wind:.22,heat:.22,forest:.24,landslide:.16,debris:.11}[id]??.2;

@@ -23,6 +23,9 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     <label class="effect-seek-label">效果时间线 · 独立于监测轨迹<input id="effect-seek" type="range" min="0" max="30" step=".1" value="0"></label>
     <p class="effect-validity" id="effect-validity" role="status"></p><p class="control-hint" id="effect-terrain-result"></p><p class="effects-boundary" id="effect-boundary"></p>`;
   document.querySelector('.map-panel').after(panel);const $=q=>panel.querySelector(q);
+  const transport=document.createElement('div');transport.className='wind-map-transport';transport.hidden=true;
+  transport.innerHTML='<button class="btn primary" id="wind-map-play">播放大风</button><div><b id="wind-map-status"></b><small id="wind-map-time"></small></div><button class="btn" data-wind-camera="front">恢复正面</button><button class="btn" data-wind-camera="side">侧面观察</button><label><input type="checkbox" id="wind-map-motion"> 动态效果</label><small id="wind-camera-hint">拖动只改变视角，播放才推进风过程</small>';
+  document.querySelector('#canvas').after(transport);
   let current=null,disposed=false,previous=performance.now(),paint=-1,identity;
   function setup(id) {
     const s=getState();s.effectSettings??={};s.effectPlayback??={};s.effectLastValid??={};
@@ -41,6 +44,9 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   }
   function locate(){const s=getState();s.mode='3d';getScene()?.setMode('3d');getScene()?.focusEffect?.(s.selected);document.querySelector('.map-panel').scrollIntoView({block:'center',behavior:reduced?'auto':'smooth'});render();}
   $('#effect-focus').onclick=locate;
+  transport.querySelector('#wind-map-play').onclick=()=>$('#effect-play').click();
+  transport.querySelector('#wind-map-motion').onchange=e=>{const {c,p}=setup('wind');c.motion=e.target.checked;if(!c.motion)p.running=false;render();};
+  for(const el of transport.querySelectorAll('[data-wind-camera]'))el.onclick=()=>{setup('wind').c.view='flag';getScene()?.focusWindDetail?.('flag',el.dataset.windCamera);render();};
   $('#effect-play').onclick=()=>{
     const id=getState().selected,{n,c,p}=setup(id);if(n.unknown)return;
     if(p.running){p.running=false;render();return;}
@@ -84,7 +90,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     $('#effect-readings').innerHTML=snap.notes.map((t,i)=>`<div><span>${['环境与监测','条件与现场','画面解释'][i]}</span><b>${t}</b></div>`).join('');
     $('#effect-legend').innerHTML=snap.legend.map(t=>`<span>${t}</span>`).join('');
     for(const f of effectFields[id]){const el=$('#effect-'+f.key);if(document.activeElement!==el)el.value=c[f.key];el.disabled=n.unknown;}
-    $('#wind-controls').hidden=id!=='wind';
+    $('#wind-controls').hidden=id!=='wind';transport.hidden=id!=='wind';
     if(id==='wind'){
       for(const [kind,value] of [['speed',n.value],['duration',n.secondary],['direction',n.extra.direction]])for(const suffix of ['', '-number']){const el=$('#wind-'+kind+suffix);if(document.activeElement!==el)el.value=value;el.disabled=n.unknown;}
       panel.querySelectorAll('[data-wind-view]').forEach(el=>{const active=el.dataset.windView===c.view;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
@@ -92,19 +98,26 @@ export function mountHazardEffects(getState,getScene,render,toast) {
       panel.querySelectorAll('[data-wind-duration],[data-wind-direction]').forEach(el=>el.disabled=n.unknown);
       $('#wind-direction-reading').textContent=`设定来向 ${n.extra.direction}°；当前来自${snap.wind?.from??'—'}方，吹向${snap.wind?.toward??'—'}方`;
       $('#wind-current-speed').textContent=snap.unavailable?'未知':`${snap.wind.speed.toFixed(1)} m/s`;
-      $('#wind-process-status').textContent=snap.unknown?'数据未知 · 冻结最后有效画面':snap.wind.ended?'已结束 · 旗布与树冠回落':p.running?'播放中':p.activated?'已暂停 · 可定位时间线':'尚未启动';
+      $('#wind-process-status').textContent=snap.unknown?'数据未知 · 冻结最后有效画面':!c.motion?'动态已关闭 · 下方可启用':snap.wind.ended?'已结束 · 旗布与树冠回落':p.running?'播放中':p.activated?'已暂停 · 可定位时间线':'尚未启动';
     }
     $('#effect-fields').hidden=!effectFields[id].length||(id==='wind'&&!c.gust);$('#effect-formation-label').hidden=id!=='ice';$('#effect-formation').checked=c.formation;$('#effect-formation').disabled=n.unknown;
-    $('#effect-play').textContent=p.running?'暂停效果':id==='landslide'?'启动滑移示意':id==='debris'?'启动泥流示意':id==='ice'?'播放冰面反光':'播放效果';
+    $('#effect-play').textContent=id==='wind'?(p.running?'暂停大风':'播放大风'):p.running?'暂停效果':id==='landslide'?'启动滑移示意':id==='debris'?'启动泥流示意':id==='ice'?'播放冰面反光':'播放效果';
     $('#effect-play').disabled=n.unknown||!c.motion||snap.duration===0||(id==='ice'&&!snap.ice)||(id==='wind'&&n.value<=0);$('#effect-rewind').disabled=n.unknown;$('#effect-motion').checked=c.motion;$('#effect-speed').value=p.speed;
     $('#effect-seek').max=snap.duration||1;$('#effect-seek').value=p.time;$('#effect-seek').disabled=n.unknown||snap.duration===0;$('#effect-time').textContent=`${p.time.toFixed(1)} / ${snap.duration.toFixed(0)} s`;
     $('#effect-validity').textContent=n.unknown?'数据未知：冻结最后有效示意，不能按正常状态使用。':!getScene()?'正在加载三维效果…':getScene().backend!=='WebGL / Three.js r185'?'当前设备三维渲染不可用，参数与文字解释仍可查看。':p.running?'效果播放中 · 所有参数为模拟':!c.motion?'动态已关闭 · 可拖动时间线查看静态阶段':'静态阶段 · 点击播放或拖动时间线';
     $('#effect-boundary').textContent=boundaries[id];panel.classList.toggle('effects-unknown',n.unknown);
     const layer=window.__hazardLayer;$('#effect-terrain-result').hidden=!['landslide','debris'].includes(id);
     $('#effect-terrain-result').textContent=layer?.id===id?(layer.pathPoints>1?`DEM示意下坡路径 ${layer.pathLengthMeters.toFixed(0)} m${id==='debris'?` · 当前泥流前沿 ${layer.frontMeters.toFixed(1)} m；到达示意路径终点后不再延伸`:''}`:'该点DEM采样未找到连续下坡路径，不伪造运动通道。'):'正在核对示意下坡路径…';
+    if(id==='wind'){
+      const motion=transport.querySelector('#wind-map-motion');motion.checked=c.motion;motion.disabled=n.unknown;const button=transport.querySelector('#wind-map-play');button.textContent=$('#effect-play').textContent;button.disabled=$('#effect-play').disabled;
+      transport.querySelector('#wind-map-status').textContent=$('#wind-process-status').textContent;
+      transport.querySelector('#wind-map-time').textContent=`${p.time.toFixed(1)} / ${snap.duration} 秒 · ${snap.wind?.speed.toFixed(1)??'—'} m/s`;
+      const top=document.querySelector('#play');top.textContent=button.textContent;top.disabled=button.disabled;
+    }
     window.__hazardEffects={...snap,running:p.running};
   }
   function frame(now){if(disposed)return;requestAnimationFrame(frame);const dt=Math.min(.5,(now-previous)/1000);previous=now;const id=getState().selected;if(!effectIds.includes(id)||document.hidden)return;const {n,c,p}=setup(id),wasRunning=p.running;if(p.running&&!n.unknown&&c.motion){const duration=snapshot(id).duration;p.time=Math.min(duration,p.time+dt*p.speed);if(p.time>=duration)p.running=false;}if(wasRunning){const tick=Math.floor(now/200);if(tick!==paint||!p.running){paint=tick;render();}}}
-  requestAnimationFrame(frame);refresh();
-  return {refresh,snapshot,dispose(){disposed=true;panel.remove();}};
+  let hintPaint=0;function cameraHint(now){if(disposed)return;requestAnimationFrame(cameraHint);if(getState().selected!=='wind'||now-hintPaint<200)return;hintPaint=now;const v=window.__windVisual,thin=v?.flagFaceAlignment<.3;transport.querySelector('#wind-camera-hint').textContent=thin?'旗布接近侧视，点击「恢复正面」看布面起伏':'拖动只改变视角，播放才推进风过程';}
+  requestAnimationFrame(cameraHint);requestAnimationFrame(frame);refresh();
+  return {refresh,snapshot,dispose(){disposed=true;panel.remove();transport.remove();}};
 }

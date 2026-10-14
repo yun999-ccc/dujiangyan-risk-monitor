@@ -42,7 +42,7 @@ export function windFrame(n,c,time=0,activated=false,history=null){
 }
 export function flagVertex(u,v,index,frame){
  const s=frame.strength,stretch=.10+.90*Math.sqrt(s),wave=s*(.00055+.00025*Math.sin(frame.phase*.4+index)),normal=wave*Math.sin(u*9-frame.phase*2+v*2+index)*u;
- return {along:.006*u*stretch,side:normal+(1-s)*.00012*Math.sin(u*7+v*3)*u,y:-.003*v-.0022*(1-s)*u*u};
+ return {along:.006*u*stretch,side:normal+(1-s)*.00012*Math.sin(u*7+v*3)*u,y:-.003*v-.0022*(1-s)*u*u+s*.00065*u*u*Math.sin(u*7-frame.phase*1.7+index+v)};
 }
 export function treeResponse(index,frame){
  const s=frame.strength,osc=.78+.22*Math.sin(frame.phase*.65+index*1.9);return {bend:s*.22*osc,flutter:s*.045*Math.sin(frame.phase*1.2+index*2.7)};
