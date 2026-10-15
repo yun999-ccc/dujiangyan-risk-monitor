@@ -52,3 +52,8 @@ test('热浪倍率、遮阴与独立上升速度有界，不把湿度当作人�
  assert.equal(effectSnapshot('heat',n,{gain:1},5,true).heatGain,1);updateNode(s,'heat','shade','有遮阴');assert.equal(effectSnapshot('heat',n,{gain:1},5,true).heatGain,.45);
  assert.equal(effectSnapshot('heat',n,{gain:0},5,true).heatActive,false);updateValue(s,'heat',20);assert.equal(effectSnapshot('heat',n,{gain:3},5,true).heatActive,false);assert.equal(effectSettings('heat',{rise:-2}).rise,0);assert.equal(effectSettings('heat',{rise:100}).rise,3);
 });
+test('独立林火视觉强度可关闭火焰，火险与巡查证据仍独立',()=>{
+ const s=createState(),n=s.states.forest;updateValue(s,'forest',100);assert.equal(effectSnapshot('forest',n,{fireMode:'risk'},5,true).fireActive,false);
+ assert.equal(effectSnapshot('forest',n,{fireMode:'fire',power:1},5,true).fireActive,true);assert.equal(effectSnapshot('forest',n,{fireMode:'fire',power:0},5,true).fireActive,false);assert.equal(effectSnapshot('forest',n,{fireMode:'fire',radius:0},5,true).burnRadius,0);assert.equal(effectSnapshot('forest',n,{fireMode:'fire',duration:0},0,true).fireActive,false);
+ assert.equal(effectSettings('forest',{}).view,'context');assert.equal(effectSettings('forest',{smokeGain:5}).smokeGain,2);assert.equal(effectSettings('forest',{power:-1}).power,0);
+});
