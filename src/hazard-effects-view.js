@@ -40,7 +40,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   }
   $('#ice-temperature').onchange=e=>{if(e.target.value!==''&&e.target.checkValidity()){updateValue(getState(),'ice',e.target.valueAsNumber);render();}};$('#ice-surface').onchange=e=>{updateNode(getState(),'ice','surface',e.target.value);render();};for(const key of ['accumulate','snowfall'])$('#ice-'+key).onchange=e=>{const {c,p}=setup('ice');c[key]=e.target.checked;p.running=false;if(key==='accumulate'){p.time=0;p.activated=false;}render();};$('#ice-closeup').onclick=()=>{getScene()?.focusIceDetail?.();};
   const processControls=mountProcessControls(getState,setup,render,getScene);
-  for(const id of effectIds){const {p,c}=setup(id);p.running=false;if(reduced)c.motion=false;p.speed=[1,3,5,10].includes(p.speed)?p.speed:1;p.time=Math.max(0,Number.isFinite(p.time)?p.time:0);}
+  for(const id of effectIds){const {p,c}=setup(id);p.running=false;if(id==='heat')c.view='context';if(reduced)c.motion=false;p.speed=[1,3,5,10].includes(p.speed)?p.speed:1;p.time=Math.max(0,Number.isFinite(p.time)?p.time:0);}
   function snapshot(id) {
     const {s,n,c,p}=setup(id);
     if(!n.unknown){if(id==='wind'){p.time=Math.min(p.time,n.secondary);if(n.secondary===0||n.value===0||p.time>=n.secondary)p.running=false;syncWindHistory(p,windConfig(n,c));}const snap=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);if(processIds.includes(id)&&(snap.duration===0||id==='heat'&&(snap.heatGain===0||c.rise===0)||id==='forest'&&c.fireMode==='fire'&&c.radius===0||id==='landslide'&&c.travel===0||id==='debris'&&c.velocity===0))p.running=false;p.time=Math.min(p.time,snap.duration);s.effectLastValid[id]=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);return s.effectLastValid[id];}
@@ -59,7 +59,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     if(!c.motion){toast('动态效果已关闭，可拖动效果时间线查看静态阶段');return;}
     if(id==='forest'&&c.fireMode==='risk'&&!['发现烟雾','发现火情'].includes(n.extra.inspection)){toast('当前为火险背景；选择独立火情演示后可主动播放火焰');return;}
     const snap=snapshot(id);if(snap.duration<=0){toast('持续时间为零，不启动效果');return;}
-    if(p.time>=snap.duration)p.time=0;p.activated=true;p.running=true;if(id==='ice')render();else locate();
+    if(p.time>=snap.duration)p.time=0;p.activated=true;p.running=true;if(['ice','heat'].includes(id))render();else locate();
   };
   $('#effect-rewind').onclick=()=>{const {p}=setup(getState().selected);p.time=0;p.running=false;p.activated=false;if(getState().selected==='wind'){delete p.windHistory;delete p.windKey;}render();};
   $('#effect-seek').oninput=e=>{const {n,p}=setup(getState().selected);if(n.unknown)return;p.time=+e.target.value;p.activated=p.time>0;p.running=false;render();};
