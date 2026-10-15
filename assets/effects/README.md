@@ -40,3 +40,5 @@ Use case: stylized-concept. Asset type: seamless repeating diffuse albedo textur
 使用方法：生成纹理的RGB和alpha参与热浪形态、UV扰动及透明遮罩；热浪从离屏渲染的真实场景背景采样偏移，形成局部扭曲。生成图片不是整张地图替代品；地表仅显示柔和、透明的受热示意，不再绘制实心色盘。外沿使用额外UV淡出，避免原图边界出现在场景中。相邻公开道路仅作为视觉锚点，界面标明距模拟节点的距离，未声称该道路有实测温度。
 
 森林火情第二版已改用 `flame-v2.png` 与 `smoke-v2.png`。两张图均由内置image_gen重新生成；完整提示词、透明度统计与用途见 [forest-v2-prompts.md](forest-v2-prompts.md)。旧版图片保留用于追溯。
+
+第二版热浪已接入 `heat-haze-v2.png`（1024×1536，992071 个全透明像素、580793 个部分透明像素）。完整提示词与用途见 [heat-v2-prompts.md](heat-v2-prompts.md)。默认增强示意保留生成纹理的明暗轮廓，沿竖直薄片升腾、扩张、淡出；可关闭增强只看背景扭曲。高度和亮度为视觉放大，不是实测热羽流。

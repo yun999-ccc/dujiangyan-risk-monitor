@@ -9,7 +9,7 @@ export const effectFields = {
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function effectSettings(id, input={}) {
   const result={motion:input.motion!==false,formation:input.formation===true,gust:input.gust===true};if(id==='ice'){result.accumulate=input.accumulate===true;result.snowfall=input.snowfall!==false;}if(id==='wind')result.view=['field','flag','tree'].includes(input.view)?input.view:'flag';
-  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':'subject';result.follow=input.follow!==false;}if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
+  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':'subject';result.follow=input.follow!==false;}if(id==='heat')result.illustrated=input.illustrated!==false;if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
   for(const f of effectFields[id]??[]) result[f.key]=Number.isFinite(input[f.key])?clamp(input[f.key],f.min,f.max):f.value;
   return result;
 }
