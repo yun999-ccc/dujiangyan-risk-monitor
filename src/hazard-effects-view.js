@@ -54,11 +54,11 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   transport.querySelector('#wind-map-motion').onchange=e=>{const {c,p}=setup('wind');c.motion=e.target.checked;if(!c.motion)p.running=false;render();};
   for(const el of transport.querySelectorAll('[data-wind-camera]'))el.onclick=()=>{setup('wind').c.view='flag';getScene()?.focusWindDetail?.('flag',el.dataset.windCamera);render();};
   $('#effect-play').onclick=()=>{
-    const id=getState().selected,{n,c,p}=setup(id);if(n.unknown)return;
+    const id=getState().selected;let {n,c,p}=setup(id);if(n.unknown)return;
     if(p.running){p.running=false;render();return;}
     if(!c.motion){toast('动态效果已关闭，可拖动效果时间线查看静态阶段');return;}
-    if(id==='forest'&&c.fireMode==='risk'&&!['发现烟雾','发现火情'].includes(n.extra.inspection)){toast('当前为火险背景；选择独立火情演示后可主动播放火焰');return;}
-    const snap=snapshot(id);if(snap.duration<=0){toast('持续时间为零，不启动效果');return;}
+    const snap=snapshot(id);c=setup(id).c;if(snap.duration<=0){toast('持续时间为零，不启动效果');return;}
+    if(id==='forest'){if(c.radius<=0||c.power<=0)return;const fresh=c.fireMode!=='fire'||!p.activated||p.time>=snap.duration;c.fireMode='fire';if(fresh){p.time=0;c.view='subject';getState().mode='3d';getScene()?.setMode('3d');getScene()?.focusProcess?.(id,'subject');}}
     if(p.time>=snap.duration)p.time=0;p.activated=true;p.running=true;if(['ice','heat','forest'].includes(id))render();else locate();
   };
   $('#effect-rewind').onclick=()=>{const {p}=setup(getState().selected);p.time=0;p.running=false;p.activated=false;if(getState().selected==='wind'){delete p.windHistory;delete p.windKey;}render();};
@@ -108,9 +108,9 @@ export function mountHazardEffects(getState,getScene,render,toast) {
       $('#wind-process-status').textContent=snap.unknown?'数据未知 · 冻结最后有效画面':!c.motion?'动态已关闭 · 下方可启用':snap.wind.ended?'已结束 · 旗布与树冠回落':p.running?'播放中':p.activated?'已暂停 · 可定位时间线':'尚未启动';
     }
     $('#effect-fields').hidden=!effectFields[id].length||(id==='wind'&&!c.gust);$('#effect-formation-label').hidden=id!=='ice';$('#effect-formation').checked=c.formation;$('#effect-formation').disabled=n.unknown;
-    $('#effect-play').textContent=id==='wind'?(p.running?'暂停大风':'播放大风'):p.running?'暂停效果':id==='landslide'?'启动滑移示意':id==='debris'?'启动泥流示意':id==='ice'?'播放冰雪过程':id==='heat'?'播放热浪':id==='forest'?'启动火情演示':'播放效果';
+    $('#effect-play').textContent=id==='wind'?(p.running?'暂停大风':'播放大风'):p.running?'暂停效果':id==='landslide'?'启动滑移示意':id==='debris'?'启动泥流示意':id==='ice'?'播放冰雪过程':id==='heat'?'播放热浪':id==='forest'?(p.activated&&c.fireMode==='fire'?(p.time>=snap.duration?'重新演示火情':'继续火情演示'):'启动火情演示'):'播放效果';
     const neededAssets={heat:['heat'],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]??[];const assetsPending=neededAssets.some(name=>window.__processAssets?.[name]!=='ready');
-    $('#effect-play').disabled=assetsPending||n.unknown||!c.motion||snap.duration===0||(id==='ice'&&(!snap.ice&&snap.targetSnow<=0||c.coverage===0))||(id==='wind'&&n.value<=0)||(id==='forest'&&(c.fireMode==='risk'&&!snap.smoke||c.fireMode==='fire'&&(c.radius<=0||c.power<=0)))||(id==='landslide'&&c.travel<=0)||(id==='debris'&&c.velocity<=0)||(id==='heat'&&(snap.heatGain<=0||c.rise===0));processControls.refresh();if(id==='ice'){const top=document.querySelector('#play');top.textContent=$('#effect-play').textContent;top.disabled=$('#effect-play').disabled;}$('#effect-rewind').disabled=n.unknown;$('#effect-motion').checked=c.motion;$('#effect-speed').value=p.speed;
+    $('#effect-play').disabled=assetsPending||n.unknown||!c.motion||snap.duration===0||(id==='ice'&&(!snap.ice&&snap.targetSnow<=0||c.coverage===0))||(id==='wind'&&n.value<=0)||(id==='forest'&&(c.radius<=0||c.power<=0))||(id==='landslide'&&c.travel<=0)||(id==='debris'&&c.velocity<=0)||(id==='heat'&&(snap.heatGain<=0||c.rise===0));processControls.refresh();if(id==='ice'){const top=document.querySelector('#play');top.textContent=$('#effect-play').textContent;top.disabled=$('#effect-play').disabled;}$('#effect-rewind').disabled=n.unknown;$('#effect-motion').checked=c.motion;$('#effect-speed').value=p.speed;
     $('#effect-seek').max=snap.duration||1;$('#effect-seek').value=p.time;$('#effect-seek').disabled=n.unknown||snap.duration===0;$('#effect-time').textContent=`${p.time.toFixed(1)} / ${snap.duration.toFixed(0)} s`;
     $('#effect-validity').textContent=n.unknown?'数据未知：冻结最后有效示意，不能按正常状态使用。':!getScene()?'正在加载三维效果…':getScene().backend!=='WebGL / Three.js r185'?'当前设备三维渲染不可用，参数与文字解释仍可查看。':p.running?'效果播放中 · 所有参数为模拟':!c.motion?'动态已关闭 · 可拖动时间线查看静态阶段':'静态阶段 · 点击播放或拖动时间线';
     $('#effect-boundary').textContent=boundaries[id];panel.classList.toggle('effects-unknown',n.unknown);
