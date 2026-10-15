@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {PNG} from 'pngjs';
 test.setTimeout(120000);
 const edit=async(p,id,v)=>{await p.locator(id).fill(String(v));await p.locator(id).press('Tab');};
-const select=async(p,id)=>{await p.locator(`[data-hazard="${id}"]`).click();await p.waitForFunction(id=>window.__hazardLayer?.id===id,id);await p.waitForFunction(id=>({heat:[],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]).every(name=>window.__processAssets?.[name]==='ready'),id);await p.locator('[data-process-view="subject"]').click();};
+const select=async(p,id)=>{await p.locator(`[data-hazard="${id}"]`).click();await p.waitForFunction(id=>window.__hazardLayer?.id===id,id);await p.waitForFunction(id=>({heat:['heat'],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]).every(name=>window.__processAssets?.[name]==='ready'),id);await p.locator('[data-process-view="subject"]').click();};
 const seek=async(p,t)=>{await p.locator('#process-seek').fill(String(t));const frame=await p.evaluate(()=>window.__sceneMetrics.frames);await p.waitForFunction(({t,frame})=>window.__sceneMetrics.frames>frame&&window.__hazardLayer.time===t,{t,frame});};
 function changes(a,b){a=PNG.sync.read(a);b=PNG.sync.read(b);let n=0;for(let y=130;y<a.height-40;y++)for(let x=60;x<a.width-60;x++){const k=(y*a.width+x)*4;if(Math.abs(a.data[k]-b.data[k])+Math.abs(a.data[k+1]-b.data[k+1])+Math.abs(a.data[k+2]-b.data[k+2])>30)n++;}return n;}
 test.beforeEach(async({page})=>{await page.goto('?risk=heat');await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');await page.waitForFunction(()=>window.__processAssets&&Object.values(window.__processAssets).every(x=>x==='ready'));});

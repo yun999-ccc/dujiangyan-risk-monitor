@@ -47,3 +47,8 @@ test('冰雪增长显式启用且可重现，零覆盖零时长与干燥路面�
  assert.equal(effectSnapshot('ice',n,{...c,coverage:0},20,true).snowfall,false);assert.equal(effectSnapshot('ice',n,{...c,duration:0},0,true).snowfall,false);
  updateNode(s,'ice','surface','干燥');assert.equal(effectSnapshot('ice',n,c,20,true).snowfall,false);assert.equal(effectSnapshot('ice',n,c,20,true).coverage,0);
 });
+test('热浪倍率、遮阴与独立上升速度有界，不把湿度当作人体风险',()=>{
+ const s=createState();updateValue(s,'heat',45);updateNode(s,'heat','shade','无遮阴');const n=s.states.heat;
+ assert.equal(effectSnapshot('heat',n,{gain:1},5,true).heatGain,1);updateNode(s,'heat','shade','有遮阴');assert.equal(effectSnapshot('heat',n,{gain:1},5,true).heatGain,.45);
+ assert.equal(effectSnapshot('heat',n,{gain:0},5,true).heatActive,false);updateValue(s,'heat',20);assert.equal(effectSnapshot('heat',n,{gain:3},5,true).heatActive,false);assert.equal(effectSettings('heat',{rise:-2}).rise,0);assert.equal(effectSettings('heat',{rise:100}).rise,3);
+});

@@ -28,3 +28,13 @@ Use case: stylized-concept. Asset type: seamless repeating diffuse texture for a
 ### soil-v1
 
 Use case: stylized-concept. Asset type: seamless repeating diffuse albedo texture for a 3D landslide soil block in a geographic sandtable. Orthographic flat top-down square field of dry exposed earth, warm muted ochre and taupe with subtle granular clay, fine cracks and occasional small angular gray tan stones. Refined natural detail but compatible with a stylized low-poly sandtable. Neutral uniform diffuse light, low contrast with no baked shadows. Tile seamlessly on all four edges. No horizon, no perspective, no scene, no vegetation, no text, no roads, no mountains, no borders, no stripe diagrams, no large recognizable rocks. Clearly dry compact earth unlike wet brown slurry. This will be mapped onto a moving mesh and a stationary exposed source scar.
+
+## 高温热浪材质 · heat-haze-v1.png
+
+生成工具：Codex 内置 `image_gen`，新图生成，透明背景；没有使用外部图片服务或CLI。工具未公开底层模型版本。原始尺寸1254×1254；344502个全透明像素、1228014个部分透明像素。保留原始PNG及alpha，接入项目 `assets/effects/heat-haze-v1.png`。
+
+最终提示词（完整）：
+
+> Use case: scientific-educational. Asset type: transparent heat shimmer VFX texture for an interactive Three.js geographic hazard demonstration. Generate ONE isolated square texture of rising hot-air shimmer, soft wispy vertically stretching refractive-looking filaments and delicate turbulent ripples. Actual transparent background with low-opacity ivory and pale warm amber wisps, strongly faded edges, irregular airy silhouette. The asset will be animated with UV displacement and opacity, so include fine organic turbulent detail and clear layered upward flow but no recognizable scene. Restrained realistic optical heat haze appearance, NOT fire, NOT smoke, NOT a solid orange blob. No buildings, ground, sun, thermometer, text, border, diagram or baked checkerboard. Texture fills central 80% of image; all outer edges fully transparent. Useful visible medium contrast wisps for compositing over green terrain, no large opaque region.
+
+使用方法：生成纹理的RGB和alpha参与热浪形态、UV扰动及透明遮罩；热浪从离屏渲染的真实场景背景采样偏移，形成局部扭曲。生成图片不是整张地图替代品；地表仅显示柔和、透明的受热示意，不再绘制实心色盘。外沿使用额外UV淡出，避免原图边界出现在场景中。相邻公开道路仅作为视觉锚点，界面标明距模拟节点的距离，未声称该道路有实测温度。

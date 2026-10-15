@@ -144,8 +144,8 @@ export async function createScene(container,getState,onSelect){
    if(following){const frame=hazardLayer.processBounds(processId,'subject');if(frame){const delta=new THREE.Vector3(frame.center.x,frame.center.y,frame.center.z).sub(controls.target);camera.position.add(delta);controls.target.add(delta);controls.update();}}
    window.__processCamera={id:processId,following:!!following,target:controls.target.toArray(),camera:camera.position.toArray()};
   }
-  renderer.render(scene,camera);frames++;
-  window.__sceneMetrics={frames,buildingsVisible:buildings.visible&&buildings.children.length>0,roadsVisible:roads.visible,elapsedMs:performance.now()-started,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,labelCount:placements.filter(p=>p.box).length,pixelRatio:renderer.getPixelRatio()};
+  const capturedHeat=hazardLayer.captureHeat(renderer,camera),backgroundCalls=capturedHeat?renderer.info.render.calls:0,backgroundTriangles=capturedHeat?renderer.info.render.triangles:0,shadowUpdate=renderer.shadowMap.autoUpdate;if(capturedHeat)renderer.shadowMap.autoUpdate=false;try{renderer.render(scene,camera);}finally{renderer.shadowMap.autoUpdate=shadowUpdate;}frames++;
+  window.__sceneMetrics={frames,buildingsVisible:buildings.visible&&buildings.children.length>0,roadsVisible:roads.visible,elapsedMs:performance.now()-started,backgroundPass:capturedHeat,drawCalls:renderer.info.render.calls+backgroundCalls,triangles:renderer.info.render.triangles+backgroundTriangles,labelCount:placements.filter(p=>p.box).length,pixelRatio:renderer.getPixelRatio()};
  }
 
  render();

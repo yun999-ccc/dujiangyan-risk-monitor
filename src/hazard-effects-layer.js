@@ -11,7 +11,7 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
   const label=document.createElement('div');label.className='effect-map-label';container.append(label);label.hidden=true;
   const v=new THREE.Vector3(),height=(x,z)=>{const p=unproject(x,z,bounds);return elevation(p.lon,p.lat);};
   const windHazard=hazards.find(h=>h.id==='wind'),windOrigin=project(windHazard.lon,windHazard.lat,bounds),windLayer=createWindLayer(scene,windOrigin,height,windPlacement);
-  const processLayer=createProcessLayer(scene,bounds,height);
+  const processLayer=createProcessLayer(scene,bounds,height,roadBuilder);
   const mat=(color,opacity=1)=>new THREE.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});
   function clear(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});group.clear();live={};}
   function mesh(geometry,material,parent=group){const m=new THREE.Mesh(geometry,material);parent.add(m);return m;}
@@ -125,7 +125,7 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
       window.__hazardLayer={...metrics,id:'wind',caption:label.textContent,strength:snap.strength,direction:snap.direction,moving:p.running&&!snap.unknown,time:snap.time,visible:true};return;
     }
     windLayer.hide();
-    if(processIds.includes(id)){if(!n.unknown)s.effectLastValid[id]=snap;group.visible=false;const metrics=processLayer.update(id,n,snap,camera,container);label.hidden=false;label.textContent=snap.unknown?'数据未知 · 冻结最后有效示意':`${id==='heat'?'热浪纹理示意':id==='forest'?'火险/火情为手动示意':id==='landslide'?'独立土体滑移示意':'泥流前沿与颗粒示意'}${!snap.activated?' · 尚未启动':''}`;window.__hazardLayer={...metrics,unknown:snap.unknown,moving:p.running&&!snap.unknown&&snap.motion,time:snap.time,caption:label.textContent,strength:snap.strength};return;}
+    if(processIds.includes(id)){if(!n.unknown)s.effectLastValid[id]=snap;group.visible=false;const metrics=processLayer.update(id,n,snap,camera,container);label.hidden=false;label.textContent=snap.unknown?'数据未知 · 冻结最后有效示意':`${id==='heat'?(snap.activated?'高温热浪 · 局部折射示意':'高温 · 点击播放查看热浪'):id==='forest'?'火险/火情为手动示意':id==='landslide'?'独立土体滑移示意':'泥流前沿与颗粒示意'}${id==='heat'&&metrics.heatRoad?' · '+metrics.heatRoad.name+'距节点'+metrics.heatRoad.distanceMeters.toFixed(0)+'m（视觉锚点）':''}${!snap.activated?' · 尚未启动':''}`;window.__hazardLayer={...metrics,unknown:snap.unknown,moving:p.running&&!snap.unknown&&snap.motion,time:snap.time,caption:label.textContent,strength:snap.strength};return;}
     processLayer.hide();
     const cacheKey=JSON.stringify([id,snap.input,snap.settings]);
     if(key!==cacheKey){key=cacheKey;build(id,snap.input,snap);}
@@ -149,5 +149,5 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
     let soilInFrame=true;if(live.soil?.visible){live.soil.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(live.soil);for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);if(Math.abs(p.x)>.98||Math.abs(p.y)>.98||p.z>1)soilInFrame=false;}}
     window.__hazardLayer={soilInFrame,id,visible:true,caption,roadBinding:live.roadBinding??null,moving,time,ice:snap.ice,snow:snap.snow,coverage:snap.coverage,snowfallVisible:!!live.flakes?.visible,snowSignature:live.flakes?.visible?Array.from(live.flakes.geometry.attributes.position.array.slice(0,12)):[],smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
   }
-  return {update,windBounds:windLayer.bounds,processBounds:processLayer.framing,dispose(){processLayer.dispose();windLayer.dispose();label.remove();clear();scene.remove(group);}};
+  return {update,captureHeat:processLayer.captureHeat,windBounds:windLayer.bounds,processBounds:processLayer.framing,dispose(){processLayer.dispose();windLayer.dispose();label.remove();clear();scene.remove(group);}};
 }

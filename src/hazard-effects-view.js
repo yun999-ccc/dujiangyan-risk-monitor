@@ -43,7 +43,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   for(const id of effectIds){const {p,c}=setup(id);p.running=false;if(reduced)c.motion=false;p.speed=[1,3,5,10].includes(p.speed)?p.speed:1;p.time=Math.max(0,Number.isFinite(p.time)?p.time:0);}
   function snapshot(id) {
     const {s,n,c,p}=setup(id);
-    if(!n.unknown){if(id==='wind'){p.time=Math.min(p.time,n.secondary);if(n.secondary===0||n.value===0||p.time>=n.secondary)p.running=false;syncWindHistory(p,windConfig(n,c));}const snap=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);if(processIds.includes(id)&&(snap.duration===0||id==='heat'&&snap.heatGain===0||id==='forest'&&c.fireMode==='fire'&&c.radius===0||id==='landslide'&&c.travel===0||id==='debris'&&c.velocity===0))p.running=false;p.time=Math.min(p.time,snap.duration);s.effectLastValid[id]=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);return s.effectLastValid[id];}
+    if(!n.unknown){if(id==='wind'){p.time=Math.min(p.time,n.secondary);if(n.secondary===0||n.value===0||p.time>=n.secondary)p.running=false;syncWindHistory(p,windConfig(n,c));}const snap=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);if(processIds.includes(id)&&(snap.duration===0||id==='heat'&&(snap.heatGain===0||c.rise===0)||id==='forest'&&c.fireMode==='fire'&&c.radius===0||id==='landslide'&&c.travel===0||id==='debris'&&c.velocity===0))p.running=false;p.time=Math.min(p.time,snap.duration);s.effectLastValid[id]=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);return s.effectLastValid[id];}
     p.running=false;
     const previous=s.effectLastValid[id];
     return previous?{...previous,unknown:true,motion:false}:{...effectSnapshot(id,n,c,0,false),unknown:true,motion:false,unavailable:true,notes:['暂无有效环境输入','现场状态需核查','不生成灾害现象'],legend:['数据未知：暂无可保留的有效画面']};
@@ -80,7 +80,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   const boundaries={
     ice:'道路走向和编号来自OSM，节点移至XN19已收录路段；路面高程取公开DEM，未经测量。积雪仅覆盖该路段附近400米直径演示区，厚度与覆盖率为假定。蓝白冰面来自巡查记录或主动启用的形成演示，不是结冰预测；湿度只作背景。覆盖增长需手动启用；按指定演示时长线性变化，飘雪、冰面反光与时间线同步。不是冻结、降雪累积或融雪物理计算。',
     wind:'风速、持续时间、来向与阵风由你设定。阵风按假定间隔平滑增强再回落；旗布、树冠与风迹均为确定性视觉演示。旗杆、旗布和树木的尺寸及位置为示意，基础地形取公开DEM。风迹沿地形背景表达流向，不是实测三维风场；不计算结构受力、倒塌或树木折断。时间线独立于监测记录，结束或回放不解除风险记录。',
-    heat:'热色带仅表示当前点位温度的视觉映射，不是区域温度分布。湿度、时长和遮阴单独显示；热浪不是人体风险模型。',
+    heat:'内置绘图生成透明材质用于热浪视觉演示；温度、视觉倍率与遮阴决定强弱，上升速度为动画倍率。地表柔和色带不表示实测地表温度，热浪不是空气折射或人体风险求解。湿度仅作背景。',
     forest:'火险背景与独立火情模式分开。火源范围、增长速度和持续时间为手动假定，风向只驱动烟雾偏移。不是林火预测或燃烧求解；未设置火情模式与启动过程不会生成火焰。',
     landslide:'箭头将毫米级监测位移放大显示。滑移距离和时长为独立手动假定，路径只顺应公开DEM下坡方向；土体为示意，不改写真实山体，不计算稳定性。',
     debris:'泥流速度、宽度、含固比例与时长均为手动假定，雨量不推算泥流发生或速度。路径来自局部DEM下坡采样，未核实黄央沟沟道，遇地形低点会停止；不是实际影响范围。泥流采用优先显示的贴地覆盖图层，颗粒循环表达流向，不表示泥流厚度、流量或守恒体积。'
@@ -109,8 +109,8 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     }
     $('#effect-fields').hidden=!effectFields[id].length||(id==='wind'&&!c.gust);$('#effect-formation-label').hidden=id!=='ice';$('#effect-formation').checked=c.formation;$('#effect-formation').disabled=n.unknown;
     $('#effect-play').textContent=id==='wind'?(p.running?'暂停大风':'播放大风'):p.running?'暂停效果':id==='landslide'?'启动滑移示意':id==='debris'?'启动泥流示意':id==='ice'?'播放冰雪过程':id==='heat'?'播放热浪':id==='forest'?'启动火情演示':'播放效果';
-    const neededAssets={heat:[],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]??[];const assetsPending=neededAssets.some(name=>window.__processAssets?.[name]!=='ready');
-    $('#effect-play').disabled=assetsPending||n.unknown||!c.motion||snap.duration===0||(id==='ice'&&(!snap.ice&&snap.targetSnow<=0||c.coverage===0))||(id==='wind'&&n.value<=0)||(id==='forest'&&(c.fireMode==='risk'&&!snap.smoke||c.fireMode==='fire'&&c.radius<=0))||(id==='landslide'&&c.travel<=0)||(id==='debris'&&c.velocity<=0)||(id==='heat'&&snap.heatGain<=0);processControls.refresh();if(id==='ice'){const top=document.querySelector('#play');top.textContent=$('#effect-play').textContent;top.disabled=$('#effect-play').disabled;}$('#effect-rewind').disabled=n.unknown;$('#effect-motion').checked=c.motion;$('#effect-speed').value=p.speed;
+    const neededAssets={heat:['heat'],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]??[];const assetsPending=neededAssets.some(name=>window.__processAssets?.[name]!=='ready');
+    $('#effect-play').disabled=assetsPending||n.unknown||!c.motion||snap.duration===0||(id==='ice'&&(!snap.ice&&snap.targetSnow<=0||c.coverage===0))||(id==='wind'&&n.value<=0)||(id==='forest'&&(c.fireMode==='risk'&&!snap.smoke||c.fireMode==='fire'&&c.radius<=0))||(id==='landslide'&&c.travel<=0)||(id==='debris'&&c.velocity<=0)||(id==='heat'&&(snap.heatGain<=0||c.rise===0));processControls.refresh();if(id==='ice'){const top=document.querySelector('#play');top.textContent=$('#effect-play').textContent;top.disabled=$('#effect-play').disabled;}$('#effect-rewind').disabled=n.unknown;$('#effect-motion').checked=c.motion;$('#effect-speed').value=p.speed;
     $('#effect-seek').max=snap.duration||1;$('#effect-seek').value=p.time;$('#effect-seek').disabled=n.unknown||snap.duration===0;$('#effect-time').textContent=`${p.time.toFixed(1)} / ${snap.duration.toFixed(0)} s`;
     $('#effect-validity').textContent=n.unknown?'数据未知：冻结最后有效示意，不能按正常状态使用。':!getScene()?'正在加载三维效果…':getScene().backend!=='WebGL / Three.js r185'?'当前设备三维渲染不可用，参数与文字解释仍可查看。':p.running?'效果播放中 · 所有参数为模拟':!c.motion?'动态已关闭 · 可拖动时间线查看静态阶段':'静态阶段 · 点击播放或拖动时间线';
     $('#effect-boundary').textContent=boundaries[id];panel.classList.toggle('effects-unknown',n.unknown);
