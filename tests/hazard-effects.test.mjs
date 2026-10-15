@@ -40,3 +40,10 @@ test('DEM下坡路径可重现、逐点下降，低点和水平地形不伪造�
   assert.equal(downhillPath({x:0,z:0},()=>1).length,1);
   assert.equal(downhillPath({x:0,z:0},(x,z)=>x*x+z*z).length,1);
 });
+test('冰雪增长显式启用且可重现，零覆盖零时长与干燥路面不产生飘雪',()=>{
+ const s=createState(),n=s.states.ice;updateNode(s,'ice','surface','积雪');const c={snow:20,coverage:80,duration:40,accumulate:true};
+ const a=effectSnapshot('ice',n,c,0,false),b=effectSnapshot('ice',n,c,20,true),e=effectSnapshot('ice',n,c,40,true);
+ assert.equal(a.snow,0);assert.equal(a.coverage,0);assert.equal(a.snowfall,false);assert.equal(b.snow,10);assert.equal(b.coverage,.4);assert.equal(b.snowfall,true);assert.deepEqual(b,effectSnapshot('ice',n,c,20,true));assert.equal(e.snow,20);assert.equal(e.snowfall,false);
+ assert.equal(effectSnapshot('ice',n,{...c,coverage:0},20,true).snowfall,false);assert.equal(effectSnapshot('ice',n,{...c,duration:0},0,true).snowfall,false);
+ updateNode(s,'ice','surface','干燥');assert.equal(effectSnapshot('ice',n,c,20,true).snowfall,false);assert.equal(effectSnapshot('ice',n,c,20,true).coverage,0);
+});

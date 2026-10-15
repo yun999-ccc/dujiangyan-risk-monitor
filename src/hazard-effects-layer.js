@@ -38,13 +38,13 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
         const road=attachment.road,center=new THREE.Vector2(attachment.x,attachment.z),radius=.2;
         live.center.set(center.x,road.height(center.x,center.y)+.002,center.y);
         live.roadBinding={id:road.id,part:road.part,name:road.name,distanceMeters:attachment.distance*1000,widthMeters:road.widthMeters,lengthMeters:road.lengthMeters,surfaceSource:road.elevationSource,scopeMeters:400,snowDepthMeters:snap.snow/100,verticalGapMeters:0};
-        if(snap.coverage>0&&(snap.ice||snap.snow>0)){
+        if(snap.targetCoverage>0&&(snap.ice||snap.targetSnow>0)){
           // Copy the exact rendered asphalt triangles. No separate road and no metre-scale lift.
           const geometry=new THREE.BufferGeometry();
-          const vertices=road.geometry(),rise=snap.snow/100000;
+          const vertices=road.geometry(),rise=0;live.roadBase=vertices.slice();
           for(let i=1;i<vertices.length;i+=3)vertices[i]+=rise;
           geometry.setAttribute('position',new THREE.BufferAttribute(vertices,3));geometry.computeVertexNormals();
-          const material=new THREE.ShaderMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,uniforms:{center:{value:center},radius:{value:radius},coverage:{value:snap.coverage},tint:{value:new THREE.Color(snap.snow>0?'#f5fafb':'#b8e6ef')},phase:{value:0}},vertexShader:'varying vec2 groundPosition;void main(){groundPosition=position.xz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec2 groundPosition;uniform vec2 center;uniform float radius,coverage,phase;uniform vec3 tint;
+          const material=new THREE.ShaderMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,uniforms:{center:{value:center},radius:{value:radius},coverage:{value:snap.coverage},tint:{value:new THREE.Color(snap.targetSnow>0?'#f5fafb':'#b8e6ef')},phase:{value:0}},vertexShader:'varying vec2 groundPosition;void main(){groundPosition=position.xz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec2 groundPosition;uniform vec2 center;uniform float radius,coverage,phase;uniform vec3 tint;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
 void main(){if(distance(groundPosition,center)>radius||coverage<=0.)discard;
@@ -54,9 +54,10 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`});
-          const overlay=mesh(geometry,material);if(snap.ice&&snap.snow===0)live.ice=overlay;
+          const overlay=mesh(geometry,material);live.ice=overlay;
+          if(snap.targetSnow>0&&c.snowfall){const snowGeometry=new THREE.BufferGeometry();snowGeometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(180*3),3));const snowMaterial=new THREE.PointsMaterial({color:'#ffffff',size:2.8,sizeAttenuation:false,transparent:true,opacity:.85,depthWrite:false});live.flakes=new THREE.Points(snowGeometry,snowMaterial);snowMaterial.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(length(gl_PointCoord-vec2(.5))>.5)discard;');};group.add(live.flakes);live.snowCenter=center;}
         }
-        live.caption=`${road.name||'山区道路'} · OSM路段 ${road.id} · ${snap.snow>0?'积雪 '+snap.snow+' cm':snap.ice?'冰面覆盖':'路面核查'}（假定）`;
+        live.caption=`${road.name||'山区道路'} · OSM路段 ${road.id} · ${snap.snow>0?'积雪目标 '+snap.targetSnow+' cm':snap.ice?'冰面覆盖':'路面核查'}（假定）`;
       }
     } else if(id==='heat') {
       const color=new THREE.Color('#e3c996').lerp(new THREE.Color('#d66c38'),snap.strength);
@@ -129,7 +130,10 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
     const cacheKey=JSON.stringify([id,snap.input,snap.settings]);
     if(key!==cacheKey){key=cacheKey;build(id,snap.input,snap);}
     const time=snap.time??0,moving=p.running&&!snap.unknown&&snap.motion;
-    if(live.ice)live.ice.material.uniforms.phase.value=time*.7;
+    if(live.ice){live.ice.material.uniforms.phase.value=time*2.;live.ice.material.uniforms.coverage.value=snap.coverage;const vertices=live.ice.geometry.attributes.position;for(let i=0;i<vertices.count;i++)vertices.setY(i,live.roadBase[i*3+1]+snap.snow/100000);vertices.needsUpdate=true;if(live.roadBinding)live.roadBinding.snowDepthMeters=snap.snow/100;}
+    if(id==='ice'&&live.roadBinding)live.caption=`${live.roadBinding.name||'山区道路'} · ${snap.targetSnow>0?'积雪 '+snap.snow.toFixed(1)+' cm':snap.ice?'冰面':'无冰雪覆盖'} · 覆盖 ${(snap.coverage*100).toFixed(0)}%（假定）`;
+    if(live.flakes){live.flakes.visible=snap.snowfall;const vertices=live.flakes.geometry.attributes.position;for(let i=0;i<vertices.count;i++){const x=live.snowCenter.x+Math.sin(i*13.37)*.065+Math.sin(time*.6+i)*.002,z=live.snowCenter.y+Math.cos(i*7.41)*.065;vertices.setXYZ(i,x,height(x,z)+.001+((i*.00137-time*.006)% .045+.045)%.045,z);}vertices.needsUpdate=true;live.flakes.geometry.computeBoundingSphere();}
+
     if(live.trails)for(let i=0;i<live.trails.length;i++){const {m}=live.trails[i];m.position.copy(live.dir).multiplyScalar(((time*(id==='wind'?(.03+snap.strength*.14):.03+snap.wind*.004)+i*.027)%.24)-.12);}
     if(live.heat)for(let i=0;i<live.heat.length;i++)live.heat[i].position.x=Math.sin(time*2+i)*.006*snap.strength;
     if(live.smoke)for(const {m,index,base} of live.smoke){m.position.copy(base);m.position.x+=snap.wind/50*index*.014+Math.sin(time+index)*.004;}
@@ -143,7 +147,7 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
     const caption=snap.unknown?'数据未知 · 冻结最后有效示意':`${live.caption}${['landslide','debris'].includes(id)&&!snap.activated?' · 尚未启动运动':''}`;
     v.copy(live.center).project(camera);label.hidden=v.z>1||Math.abs(v.x)>1||Math.abs(v.y)>1;label.textContent=caption;label.style.left=`${(v.x*.5+.5)*container.clientWidth}px`;label.style.top=`${(-v.y*.5+.5)*container.clientHeight}px`;
     let soilInFrame=true;if(live.soil?.visible){live.soil.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(live.soil);for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);if(Math.abs(p.x)>.98||Math.abs(p.y)>.98||p.z>1)soilInFrame=false;}}
-    window.__hazardLayer={soilInFrame,id,visible:true,caption,roadBinding:live.roadBinding??null,moving,time,ice:snap.ice,snow:snap.snow,coverage:snap.coverage,smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
+    window.__hazardLayer={soilInFrame,id,visible:true,caption,roadBinding:live.roadBinding??null,moving,time,ice:snap.ice,snow:snap.snow,coverage:snap.coverage,snowfallVisible:!!live.flakes?.visible,snowSignature:live.flakes?.visible?Array.from(live.flakes.geometry.attributes.position.array.slice(0,12)):[],smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
   }
   return {update,windBounds:windLayer.bounds,processBounds:processLayer.framing,dispose(){processLayer.dispose();windLayer.dispose();label.remove();clear();scene.remove(group);}};
 }

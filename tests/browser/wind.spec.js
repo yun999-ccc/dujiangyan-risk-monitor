@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {PNG} from 'pngjs';
 test.setTimeout(90000);
 const edit=async(page,id,value)=>{await page.locator(id).fill(String(value));await page.locator(id).press('Tab');};
-const seek=async(page,t)=>{await page.locator('#effect-seek').fill(String(t));await page.waitForFunction(t=>window.__windVisual?.time===t,t);};
+const seek=async(page,t)=>{const frame=await page.evaluate(()=>window.__sceneMetrics.frames);await page.locator('#effect-seek').fill(String(t));await page.waitForFunction(({t,frame})=>window.__windVisual?.time===t&&window.__sceneMetrics.frames>frame,{t,frame});};
 test.beforeEach(async({page})=>{await page.goto('?risk=wind');await page.waitForFunction(()=>document.documentElement.dataset.ready==='true'&&window.__windVisual?.visible);});
 test('统一变量、0/5/15/30 m/s与四个方向联动；零风零时长不产生动作',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});

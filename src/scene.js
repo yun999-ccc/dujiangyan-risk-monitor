@@ -121,7 +121,7 @@ export async function createScene(container,getState,onSelect){
   }
   for(const item of hazards){
    const n=state.states[item.id],m=markers.get(item.id),ring=rings.get(item.id),selected=item.id===state.selected,color=n.unknown?'#8f9692':levels[n.level].color;
-   const windClose=['wind','heat','forest','landslide','debris'].includes(state.selected)&&distance<.3;m.group.visible=!windClose;ring.visible=!windClose;
+   const windClose=['ice','wind','heat','forest','landslide','debris'].includes(state.selected)&&distance<.3;m.group.visible=!windClose;ring.visible=!windClose;
    m.dot.material.color.set(color);m.dot.material.emissive.set(color);ring.material.color.set(color);
    const patch=patches.get(item.id);patch.visible=item.id!=='water'&&state.selected!=='water'&&!(selected&&['ice','wind','heat','forest','landslide','debris'].includes(item.id));patch.material.color.set(color);patch.material.opacity=n.unknown?.08:n.level===2?.3:n.level===1?.2:.09;
    ring.scale.setScalar(selected?1.6:1+n.level*.65);ring.material.opacity=n.level&&!reduced?.4+Math.sin(performance.now()*.002)*.12:.4;
@@ -130,7 +130,7 @@ export async function createScene(container,getState,onSelect){
    const pos=m.dot.getWorldPosition(new THREE.Vector3());pos.y+=.02;
    collect(label,pos,selected?10:6,(!compact||selected)&&!(['wind','heat','forest','landslide','debris'].includes(state.selected)&&distance<2&&!selected)&&!(distance<3&&selected&&item.id!=='water'));
   }
-  for(const item of geoLabels)collect(item.el,item.pos,item.nearOnly?7:3,!(['wind','heat','forest','landslide','debris'].includes(state.selected)&&distance<2)&&(!item.nearOnly||distance<1.5)&&(!compact||distance<8)&&(item.nearOnly||distance<12||['岷江','龙溪河','白沙河','内江'].includes(item.name)));
+  for(const item of geoLabels)collect(item.el,item.pos,item.nearOnly?7:3,!(['ice','wind','heat','forest','landslide','debris'].includes(state.selected)&&distance<2)&&(!item.nearOnly||distance<1.5)&&(!compact||distance<8)&&(item.nearOnly||distance<12||['岷江','龙溪河','白沙河','内江'].includes(item.name)));
   const reserved=[{left:0,top:0,right:w,bottom:78},{left:w-62,top:78,right:w,bottom:252}];
   if(state.selected!=='water'&&distance<7)reserved.push({left:8,top:82,right:w-64,bottom:143});
   const placements=arrangeLabels(entries,w,h,reserved);
@@ -184,7 +184,7 @@ export async function createScene(container,getState,onSelect){
   clearView(q,radius,targetY);
  }
 
- return {terrain,lightningExclusions,focusEffect,focusProcess,focusWindDetail,focusLightning(region,radius=1.2,framing='event'){
+ return {terrain,lightningExclusions,focusIceDetail(){const h=hazards.find(h=>h.id==='ice'),q=project(h.lon,h.lat,b),a=roadBuilder.nearestRoad(q.x,q.z);if(a)clearView({x:a.x,z:a.z},.025,a.road.height(a.x,a.z)+.002);},focusEffect,focusProcess,focusWindDetail,focusLightning(region,radius=1.2,framing='event'){
   const r=lightningRegions[region];if(!r)return;const display=getState().lightningDisplay,event=display?.event,location=event?.location;
   if(location&&framing!=='area'){const q=project(location.lon,location.lat,b),ground=elevation(location.lon,location.lat),shape=channelShape(event,getState().lightningSession?.config.style??'标准'),points=[...shape.points,...shape.branches.flat()],xs=points.map(p=>p.x),ys=points.map(p=>p.y),zs=points.map(p=>p.z);
    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),minZ=Math.min(...zs),maxZ=Math.max(...zs);
