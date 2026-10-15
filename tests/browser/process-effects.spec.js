@@ -1,0 +1,35 @@
+import {test,expect} from '@playwright/test';
+import {PNG} from 'pngjs';
+test.setTimeout(120000);
+const edit=async(p,id,v)=>{await p.locator(id).fill(String(v));await p.locator(id).press('Tab');};
+const select=async(p,id)=>{await p.locator(`[data-hazard="${id}"]`).click();await p.waitForFunction(id=>window.__hazardLayer?.id===id,id);await p.waitForFunction(id=>({heat:[],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id]).every(name=>window.__processAssets?.[name]==='ready'),id);await p.locator('[data-process-view="subject"]').click();};
+const seek=async(p,t)=>{await p.locator('#process-seek').fill(String(t));const frame=await p.evaluate(()=>window.__sceneMetrics.frames);await p.waitForFunction(({t,frame})=>window.__sceneMetrics.frames>frame&&window.__hazardLayer.time===t,{t,frame});};
+function changes(a,b){a=PNG.sync.read(a);b=PNG.sync.read(b);let n=0;for(let y=130;y<a.height-40;y++)for(let x=60;x<a.width-60;x++){const k=(y*a.width+x)*4;if(Math.abs(a.data[k]-b.data[k])+Math.abs(a.data[k+1]-b.data[k+1])+Math.abs(a.data[k+2]-b.data[k+2])>30)n++;}return n;}
+test.beforeEach(async({page})=>{await page.goto('?risk=heat');await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');await page.waitForFunction(()=>window.__processAssets&&Object.values(window.__processAssets).every(x=>x==='ready'));});
+test('四类主体在固定镜头下可见运动，控制输入与播放暂停一致',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await page.setViewportSize({width:1440,height:1080});
+ for(const id of ['heat','forest','landslide','debris']){
+  await select(page,id);await expect(page.locator('#process-primary-number')).toBeVisible();if(id==='heat'){await edit(page,'#process-primary-number',45);expect(await page.evaluate(()=>window.__monitor.state.states.heat.value)).toBe(45);}if(id==='forest')await page.locator('#process-mode').selectOption('fire');if(id==='landslide')await edit(page,'#process-travel-number',30);
+  await seek(page,5);await page.locator('[data-process-view="subject"]').click();const a=await page.locator('#canvas').screenshot({path:`artifacts/process-${id}-a.png`});const first=await page.evaluate(()=>window.__hazardLayer);await seek(page,id==='heat'?6.5:8);const b=await page.locator('#canvas').screenshot({path:`artifacts/process-${id}-b.png`});const next=await page.evaluate(()=>window.__hazardLayer);expect(next.signature).not.toBe(first.signature);expect(changes(a,b),id).toBeGreaterThan(25);await page.locator('[data-process-view="subject"]').click();await page.locator('.map-panel').screenshot({path:`artifacts/process-${id}-panel.png`});
+  await page.locator('#play').click();await page.waitForFunction(()=>window.__hazardEffects.running);await expect(page.locator('#process-play')).toContainText('暂停');await page.locator('#process-play').click();await page.waitForFunction(()=>!window.__hazardEffects.running);const frozen=await page.evaluate(()=>window.__hazardLayer.signature);await page.waitForTimeout(300);expect(await page.evaluate(()=>window.__hazardLayer.signature)).toBe(frozen);
+ }
+ expect(errors).toEqual([]);
+});
+test('火险不会自动起火；零输入与结束残迹正确，数据缺失冻结',async({page})=>{
+ await select(page,'forest');await edit(page,'#process-primary-number',100);await seek(page,8);expect(await page.evaluate(()=>window.__hazardLayer.fireActive)).toBe(false);await expect(page.locator('#process-play')).toBeDisabled();await page.locator('#process-mode').selectOption('fire');await seek(page,10);const area=await page.evaluate(()=>window.__hazardLayer.burnRadius);await edit(page,'#process-duration-number',10);await seek(page,10);expect(await page.evaluate(()=>window.__hazardLayer.fireActive)).toBe(false);expect(await page.evaluate(()=>window.__hazardLayer.burnRadius)).toBe(area);
+ await select(page,'landslide');await edit(page,'#process-travel-number',0);await seek(page,10);expect(await page.evaluate(()=>window.__hazardLayer.soilVisible)).toBe(false);
+ await select(page,'debris');await edit(page,'#process-velocity-number',0);await seek(page,10);expect(await page.evaluate(()=>window.__hazardLayer.frontMeters)).toBe(0);await edit(page,'#process-velocity-number',6);await seek(page,10);await page.waitForFunction(()=>window.__hazardLayer.mudVisible&&window.__hazardLayer.frontMeters>0);const signature=await page.evaluate(()=>window.__hazardLayer.signature);await page.locator('#quality').selectOption('missing');await page.waitForFunction(()=>window.__hazardLayer.unknown);expect(await page.evaluate(()=>window.__hazardLayer.signature)).toBe(signature);await expect(page.locator('#process-play')).toBeDisabled();
+});
+test('四类手机控制与动态开关可操作，无横向溢出',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');for(const id of ['heat','forest','landslide','debris']){await select(page,id);await expect(page.locator('#process-motion')).not.toBeChecked();await expect(page.locator('#play')).toBeDisabled();await seek(page,5);await expect(page.locator('#process-primary-number')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);await page.locator('.process-controls').screenshot({path:`artifacts/process-${id}-mobile.png`});}
+});
+
+test('移动主体跟随可退出且保留角度，初次选择自动定位',async({page})=>{
+ await select(page,'debris');await page.locator('#process-follow').check();await page.locator('#process-play').click();await page.waitForFunction(()=>window.__processCamera?.following);const first=await page.evaluate(()=>window.__processCamera);await page.waitForFunction(first=>window.__processCamera.target.some((v,i)=>Math.abs(v-first.target[i])>.001),first);const second=await page.evaluate(()=>window.__processCamera);for(let i=0;i<3;i++)expect(second.camera[i]-second.target[i]).toBeCloseTo(first.camera[i]-first.target[i],3);
+ await page.locator('#process-follow').uncheck();await page.waitForFunction(()=>!window.__processCamera.following);await page.locator('#process-play').click();await page.locator('[data-hazard="heat"]').click();await page.waitForFunction(()=>window.__processCamera?.id==='heat');expect(await page.evaluate(()=>window.__processCamera.camera.every(Number.isFinite))).toBe(true);
+});
+
+test('旧版林火有效快照在未知状态下不产生非法几何',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+ await page.evaluate(()=>{const s=window.__monitor.state;s.effectLastValid.forest={id:'forest',time:8,duration:30,activated:true,settings:{motion:true},strength:.25,smoke:true,wind:3,dryness:.6,notes:['旧版巡查快照'],legend:['烟雾示意']};s.states.forest.quality='missing';window.__monitor.select('forest');});await page.waitForFunction(()=>window.__hazardLayer.id==='forest'&&window.__hazardLayer.unknown);await expect(page.locator('#process-play')).toBeDisabled();expect(await page.evaluate(()=>window.__hazardLayer.subject.every(Number.isFinite))).toBe(true);expect(errors).toEqual([]);
+});

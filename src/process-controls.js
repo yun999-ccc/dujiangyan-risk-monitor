@@ -1,0 +1,38 @@
+import {hazards} from './model.js';
+import {fields,secondaryConfig,updateNode,updateValue} from './simulation.js';
+import {effectFields} from './hazard-effects-model.js';
+export const processIds=['heat','forest','landslide','debris'];
+export function mountProcessControls(getState,setup,render,getScene){
+ const panel=document.createElement('section');panel.className='process-controls';panel.hidden=true;
+ document.querySelector('.wind-map-transport').after(panel);let current=null;const assetsRefresh=()=>render();window.addEventListener('process-assets-change',assetsRefresh);
+ const $=q=>panel.querySelector(q);
+ function descriptors(id){const h=hazards.find(h=>h.id===id),secondary=secondaryConfig(id);return [
+  {key:'primary',label:h.metric,unit:h.unit,min:h.min,max:h.max,step:h.step,source:'node'},
+  {key:'secondary',label:h.secondary,unit:h.secondUnit,...secondary,source:'node'},
+  ...fields[id].filter(f=>id==='heat'?f.key==='shade':id==='forest'?['wind','inspection'].includes(f.key):false).map(f=>({...f,source:'node'})),
+  ...effectFields[id].map(f=>({...f,source:'effect'}))];}
+ const control=f=>f.options?`<label>${f.label}<select data-process-key="${f.key}" id="process-${f.key}">${f.options.map(v=>`<option>${v}</option>`).join('')}</select></label>`:`<label>${f.label} / ${f.unit}<div><input type="range" id="process-${f.key}" data-process-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}"><input type="number" id="process-${f.key}-number" data-process-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" aria-label="${f.label}精确输入"></div></label>`;
+ function edit(e){const id=getState().selected,{n,c,p}=setup(id),f=descriptors(id).find(f=>f.key===e.target.dataset.processKey);if(!f||n.unknown)return;if(!f.options&&(e.target.value===''||!e.target.checkValidity())){refresh();return;}const value=f.options?e.target.value:e.target.valueAsNumber;
+  if(f.source==='effect'){c[f.key]=value;p.time=Math.min(p.time,c.duration);render();}else{if(f.key==='primary')updateValue(getState(),id,value);else updateNode(getState(),id,f.key,value);render();}
+ }
+ function refresh(){const id=getState().selected;panel.hidden=!processIds.includes(id);document.body.classList.toggle('process-layout',!panel.hidden);if(panel.hidden){current=null;return;}const {n,c,p}=setup(id),h=hazards.find(h=>h.id===id),ds=descriptors(id);
+  if(current!==id){current=id;panel.innerHTML=`<div class="process-heading"><strong>${h.name} · 变量与过程</strong><span>输入与灾害演示分开</span></div><div class="process-transport"><button class="btn primary" id="process-play"></button><div><b id="process-status"></b><small id="process-clock"></small></div><label><input type="checkbox" id="process-motion"> 动态效果</label>${['landslide','debris'].includes(id)?'<label><input type="checkbox" id="process-follow"> 跟随移动主体</label>':''}</div>${id==='forest'?'<label class="process-mode">显示模式<select id="process-mode"><option value="risk">火险背景 · 无火焰</option><option value="fire">独立火情演示 · 手动假定</option></select></label>':''}<div class="process-variable-grid">${ds.map(control).join('')}</div><div class="process-views"><button data-process-view="subject">主体近景</button><button data-process-view="source">源区近景</button><button data-process-view="path">全范围</button><button id="process-rewind">回到起点</button></div><label class="process-timeline">演示时间线<input id="process-seek" type="range" min="0" step=".1"></label><p id="process-hint"></p>`;
+   $('#process-play').onclick=()=>document.querySelector('#effect-play').click();$('#process-rewind').onclick=()=>document.querySelector('#effect-rewind').click();$('#process-motion').onchange=e=>{const {c,p}=setup(id);c.motion=e.target.checked;if(!c.motion)p.running=false;render();};$('#process-seek').oninput=e=>{p.time=+e.target.value;p.activated=p.time>0;p.running=false;render();};panel.oninput=e=>{if(e.target.dataset.processKey&&e.target.type==='range')edit(e);};panel.onchange=e=>{if(e.target.dataset.processKey)edit(e);};
+   if($('#process-follow'))$('#process-follow').onchange=e=>{setup(id).c.follow=e.target.checked;render();};
+   if(id==='forest')$('#process-mode').onchange=e=>{const {c,p}=setup(id);c.fireMode=e.target.value;p.running=false;p.activated=false;p.time=0;render();};
+   panel.querySelectorAll('[data-process-view]').forEach(el=>el.onclick=()=>{setup(id).c.view=el.dataset.processView;getState().mode='3d';getScene()?.setMode('3d');getScene()?.focusProcess?.(id,el.dataset.processView);render();});
+  }
+  for(const f of ds){const value=f.source==='effect'?c[f.key]:f.key==='primary'?n.value:f.key==='secondary'?n.secondary:n.extra[f.key];for(const el of panel.querySelectorAll(`[data-process-key="${f.key}"]`)){if(document.activeElement!==el)el.value=value;el.disabled=n.unknown;}}
+  if(id==='forest')$('#process-mode').value=c.fireMode;
+  $('#process-mode')?.toggleAttribute('disabled',n.unknown);if($('#process-follow'))$('#process-follow').checked=c.follow;$('#process-motion').checked=c.motion;$('#process-motion').disabled=n.unknown;
+  const play=document.querySelector('#effect-play');$('#process-play').textContent=play.textContent;$('#process-play').disabled=play.disabled;document.querySelector('#play').textContent=play.textContent;document.querySelector('#play').disabled=play.disabled;
+  const layer=window.__hazardLayer,noPath=['landslide','debris'].includes(id)&&layer?.id===id&&layer.pathPoints<2;
+  const needed={heat:[],forest:['flame','smoke','soil'],landslide:['soil'],debris:['mud']}[id];const assetsPending=needed.some(name=>window.__processAssets?.[name]!=='ready');
+  $('#process-status').textContent=n.unknown?'数据未知 · 保留最后有效画面':!c.duration?'时长为零 · 不启动':id==='landslide'&&!c.travel?'距离为零 · 不移动':id==='debris'&&!c.velocity?'流速为零 · 不推进':assetsPending?'素材加载中或失败 · 请核查提示':!c.motion?'动态已关闭':noPath?'没有有效下坡路径':id==='forest'&&c.fireMode==='risk'&&!['发现烟雾','发现火情'].includes(n.extra.inspection)?'火险背景 · 无烟火记录':p.running?'播放中':p.activated&&p.time>=c.duration?'已结束':p.activated?'已暂停':'尚未启动';
+  $('#process-clock').textContent=`${p.time.toFixed(1)} / ${c.duration} 模拟秒`;
+  $('#process-seek').max=c.duration||1;$('#process-seek').value=p.time;$('#process-seek').disabled=n.unknown||!c.duration;panel.querySelectorAll('[data-process-view]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.processView===c.view)));
+  $('#process-hint').textContent=id==='heat'?'温度驱动热浪强弱；视觉倍率只放大表现。遮阴减弱演示，不计算人体中暑。':id==='forest'?'火险高不会自动起火。火情模式的范围和增长均为手动假定；结束保留残迹，监测与巡查不被清除。':'参数是独立假定，监测数值不自动触发灾害。结束保留土体或泥流到达范围；没有路径时不会伪造运动。';
+  const assets=window.__processAssets;if(assets&&Object.values(assets).includes('failed'))$('#process-hint').textContent+=' 素材加载失败：保留基础几何，不能按完整画面验收。';
+ }
+ return {refresh,dispose(){window.removeEventListener('process-assets-change',assetsRefresh);panel.remove();}};
+}

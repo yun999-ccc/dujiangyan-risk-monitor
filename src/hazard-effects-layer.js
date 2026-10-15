@@ -1,3 +1,5 @@
+import {createProcessLayer} from './process-layer.js';
+import {processIds} from './process-controls.js';
 import {createWindLayer} from './wind-layer.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
@@ -9,6 +11,7 @@ export function createHazardEffectsLayer(scene,bounds,elevation,getState,contain
   const label=document.createElement('div');label.className='effect-map-label';container.append(label);label.hidden=true;
   const v=new THREE.Vector3(),height=(x,z)=>{const p=unproject(x,z,bounds);return elevation(p.lon,p.lat);};
   const windHazard=hazards.find(h=>h.id==='wind'),windOrigin=project(windHazard.lon,windHazard.lat,bounds),windLayer=createWindLayer(scene,windOrigin,height,windPlacement);
+  const processLayer=createProcessLayer(scene,bounds,height);
   const mat=(color,opacity=1)=>new THREE.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});
   function clear(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});group.clear();live={};}
   function mesh(geometry,material,parent=group){const m=new THREE.Mesh(geometry,material);parent.add(m);return m;}
@@ -111,16 +114,18 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
   }
   function along(distance){if(path.length<2)return path[0];const d=Math.min(pathLength,Math.max(0,distance));let i=1;while(i<live.distances.length-1&&live.distances[i]<d)i++;const t=(d-live.distances[i-1])/(live.distances[i]-live.distances[i-1]||1),a=path[i-1],b=path[i];return {x:THREE.MathUtils.lerp(a.x,b.x,t),z:THREE.MathUtils.lerp(a.z,b.z,t)};}
   function update(camera) {
-    const s=getState(),id=s.selected;group.visible=effectIds.includes(id);label.hidden=!group.visible;if(!group.visible){windLayer.hide();window.__hazardLayer={visible:false,id};return;}
+    const s=getState(),id=s.selected;group.visible=effectIds.includes(id);label.hidden=!group.visible;if(!group.visible){windLayer.hide();processLayer.hide();window.__hazardLayer={visible:false,id};return;}
     const n=s.states[id],p=s.effectPlayback?.[id]??{time:0,activated:false,running:false},c=effectSettings(id,s.effectSettings?.[id]);
     const snap=n.unknown?{...(s.effectLastValid?.[id]??effectSnapshot(id,n,c)),unknown:true}:effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);
-    if(n.unknown&&!s.effectLastValid?.[id]){group.visible=false;windLayer.hide();label.hidden=true;window.__hazardLayer={id,visible:false,unknown:true};return;}
+    if(n.unknown&&!s.effectLastValid?.[id]){group.visible=false;windLayer.hide();processLayer.hide();label.hidden=true;window.__hazardLayer={id,visible:false,unknown:true};return;}
     if(id==='wind'){
-      if(!n.unknown)s.effectLastValid.wind=snap;
+      processLayer.hide();if(!n.unknown)s.effectLastValid.wind=snap;
       group.visible=false;const metrics=windLayer.update(snap.wind,snap.unknown,camera,container);label.hidden=false;label.textContent=`风过程示意 · ${snap.wind.speed.toFixed(1)} m/s · ${snap.wind.from} → ${snap.wind.toward}${snap.unknown?' · 数据未知，冻结画面':snap.wind.ended?' · 已结束':''}`;
       window.__hazardLayer={...metrics,id:'wind',caption:label.textContent,strength:snap.strength,direction:snap.direction,moving:p.running&&!snap.unknown,time:snap.time,visible:true};return;
     }
     windLayer.hide();
+    if(processIds.includes(id)){if(!n.unknown)s.effectLastValid[id]=snap;group.visible=false;const metrics=processLayer.update(id,n,snap,camera,container);label.hidden=false;label.textContent=snap.unknown?'数据未知 · 冻结最后有效示意':`${id==='heat'?'热浪纹理示意':id==='forest'?'火险/火情为手动示意':id==='landslide'?'独立土体滑移示意':'泥流前沿与颗粒示意'}${!snap.activated?' · 尚未启动':''}`;window.__hazardLayer={...metrics,unknown:snap.unknown,moving:p.running&&!snap.unknown&&snap.motion,time:snap.time,caption:label.textContent,strength:snap.strength};return;}
+    processLayer.hide();
     const cacheKey=JSON.stringify([id,snap.input,snap.settings]);
     if(key!==cacheKey){key=cacheKey;build(id,snap.input,snap);}
     const time=snap.time??0,moving=p.running&&!snap.unknown&&snap.motion;
@@ -140,5 +145,5 @@ float reflection=.025*sin(groundPosition.x*1200.+phase)*sin(groundPosition.y*100
     let soilInFrame=true;if(live.soil?.visible){live.soil.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(live.soil);for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);if(Math.abs(p.x)>.98||Math.abs(p.y)>.98||p.z>1)soilInFrame=false;}}
     window.__hazardLayer={soilInFrame,id,visible:true,caption,roadBinding:live.roadBinding??null,moving,time,ice:snap.ice,snow:snap.snow,coverage:snap.coverage,smoke:!!snap.smoke,soilVisible:!!live.soil?.visible,mudVisible:!!live.mud?.visible,pathPoints:path.length,pathLengthMeters:pathLength*1000,frontMeters:Math.min(pathLength*1000,snap.distance??0),strength:snap.strength,direction:snap.direction,unknown:snap.unknown};
   }
-  return {update,windBounds:windLayer.bounds,dispose(){windLayer.dispose();label.remove();clear();scene.remove(group);}};
+  return {update,windBounds:windLayer.bounds,processBounds:processLayer.framing,dispose(){processLayer.dispose();windLayer.dispose();label.remove();clear();scene.remove(group);}};
 }

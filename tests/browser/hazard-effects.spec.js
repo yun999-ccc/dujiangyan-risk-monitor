@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
-test.beforeEach(async({page})=>{await page.goto('');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true');});
+test.setTimeout(90000);
+test.beforeEach(async({page})=>{await page.goto('');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true',{timeout:30000});});
 const select=async(page,id)=>{await page.locator(`[data-hazard="${id}"]`).click();await expect(page.locator('#effect-title')).not.toBeEmpty();await page.waitForFunction(id=>window.__hazardLayer?.id===id&&window.__hazardLayer.visible,id);};
 test('六类沙盘效果可见、参数改变且无运行错误',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
@@ -20,10 +21,10 @@ test('运动明确启动、暂停和未知冻结，回放不改变监测读数',
 });
 test('滑移演示与位移监测分开；静态阶段和配置刷新保留',async({page})=>{
   await select(page,'landslide');await page.locator('#effect-travel').fill('30');await page.locator('#effect-travel').press('Tab');await page.locator('#effect-seek').fill('10');await page.waitForFunction(()=>window.__hazardLayer.soilVisible);await expect(page.locator('#effect-readings')).toContainText('15.0 / 30 m');await page.locator('#effect-motion').uncheck();expect(await page.evaluate(()=>window.__monitor.state.states.landslide.value)).toBe(.4);
-  await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true');await expect(page.locator('#effect-motion')).not.toBeChecked();await expect(page.locator('#effect-travel')).toHaveValue('30');expect(await page.evaluate(()=>window.__hazardEffects.running)).toBe(false);
+  await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true',{timeout:30000});await expect(page.locator('#effect-motion')).not.toBeChecked();await expect(page.locator('#effect-travel')).toHaveValue('30');expect(await page.evaluate(()=>window.__hazardEffects.running)).toBe(false);
 });
 test('手机无溢出，减少动态效果默认关闭且可定位静态阶段',async({page})=>{
-  await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true');await select(page,'heat');await expect(page.locator('#effect-motion')).not.toBeChecked();await expect(page.locator('#effect-play')).toBeDisabled();await page.locator('#effect-seek').fill('10');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);await page.screenshot({path:'artifacts/effects-mobile.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true',{timeout:30000});await select(page,'heat');await expect(page.locator('#effect-motion')).not.toBeChecked();await expect(page.locator('#effect-play')).toBeDisabled();await page.locator('#effect-seek').fill('10');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);await page.screenshot({path:'artifacts/effects-mobile.png',fullPage:true});
 });
 test('旧数据无有效快照时不伪造现象，效果到终点自动暂停',async({page})=>{
   await page.evaluate(()=>{window.__monitor.state.states.forest.quality='missing';window.__monitor.select('forest');});

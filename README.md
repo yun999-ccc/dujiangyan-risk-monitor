@@ -224,3 +224,21 @@ assets/         真实运行截图
 | ![旗布近景](assets/effect-wind.png) | ![树冠近景](assets/wind-tree.png) |
 
 截图使用30 m/s、120秒过程的第10秒，尺寸与响应为演示假定。
+
+## 高温、林火、滑坡与泥流过程
+
+选择风险后，地图旁可直接调整主读数、辅助输入和独立演示参数。顶部、地图旁与下方播放按钮共用效果时间线；支持暂停、拖动、动态开关及主体/源区/全范围取景。滑坡和泥流可勾选跟随，拖动镜头会退出跟随。
+
+林火默认只显示火险背景；选「独立火情演示」后主动启动，才出现火焰。结束保留残迹和监测记录。滑坡、泥流不由雨量或位移读数自动触发；无有效路径时不生成运动。高温纹理不用于诊断中暑。
+
+四张纹理由Codex内置绘图工具生成，按风险加载。查看[完整控制与验收说明](docs/process-effects-acceptance.md)和[素材原图、透明通道与生成提示词](assets/effects/README.md)。
+
+| 高温变量与热浪 | 主动火情与烟雾 |
+| --- | --- |
+| ![高温近景](assets/process-heat-preview.png) | ![林火近景](assets/process-forest-preview.png) |
+
+| 滑移土体与源区 | 泥流前沿与材质 |
+| --- | --- |
+| ![滑坡近景](assets/process-landslide-preview.png) | ![泥流近景](assets/process-debris-preview.png) |
+
+截图为各过程的固定静态阶段，不能作为真实灾害或工程精度的证据。
