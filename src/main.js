@@ -1,7 +1,7 @@
 import {applyStationSample,normalizeStationSample,isStationSource} from './station-model.js';
 import {mountCloudPanel} from './cloud-panel.js';
 import {cloud} from './cloud-session.js';
-import {publishState,validSample,linkPrefix,readLink,messageTTL} from './device-link.js';
+import {publishState,validSample,linkPrefix,readLink,messageTTL,terminalStatus} from './device-link.js';
 import './style.css';
 import {createIcons,MountainSnow,CircleHelp,House,Download,Play,Pause,MapPinned,Plus,Minus,LocateFixed,Expand,RadioTower,RotateCcw,Info,CircleCheck,TriangleAlert,ShieldAlert,Unplug,Waves,Snowflake,Zap,Wind,ThermometerSun,Trees,Mountain,Activity} from 'lucide';
 const icons={MountainSnow,CircleHelp,House,Download,Play,Pause,MapPinned,Plus,Minus,LocateFixed,Expand,RadioTower,RotateCcw,Info,CircleCheck,TriangleAlert,ShieldAlert,Unplug,Waves,Snowflake,Zap,Wind,ThermometerSun,Trees,Mountain,Activity};
@@ -109,7 +109,7 @@ function refreshCloudReadings(){
  sharedPanel.hidden=!cloud.enabled;
  if(!cloud.enabled)return;
  sharedPanel.replaceChildren();const title=document.createElement('h2');title.textContent='云端共享读数 · 与本机动画参数分开';sharedPanel.append(title);
- for(const h of hazards){const m=cloud.read(h.id),line=document.createElement('p');line.textContent=`${h.name}：${m?m.value+h.unit:'尚无数据'} · ${!m||m.connectionLost||Date.now()-m.at>messageTTL||m.unknown?'当前状态未知':levels[m.level].name}`;sharedPanel.append(line)}
+ for(const h of hazards){const m=cloud.read(h.id),line=document.createElement('p');line.textContent=`${h.name}：${m?m.value+h.unit:'尚无数据'} · ${terminalStatus(m).kind==='unknown'?'当前状态未知':levels[m.level].name}`;sharedPanel.append(line)}
  let added=false;const acks=cloud.acks;for(const a of acks){const k=a.eventId+':'+a.actor;if(sharedSeen.has(k))continue;sharedSeen.add(k);added=true;state.events.unshift({time:state.seconds,hazard:a.id,text:`云端终端：${hazards.find(h=>h.id===a.id)?.name??'风险'}已阅，未解除风险`});state.events=state.events.slice(0,80);}
  if(added)render();
 }
