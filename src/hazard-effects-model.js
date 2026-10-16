@@ -9,7 +9,7 @@ export const effectFields = {
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function effectSettings(id, input={}) {
   const result={motion:input.motion!==false,formation:input.formation===true,gust:input.gust===true};if(id==='ice'){result.accumulate=input.accumulate===true;result.snowfall=input.snowfall!==false;}if(id==='wind')result.view=['field','flag','tree'].includes(input.view)?input.view:'flag';
-  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:id==='landslide'?['context','roads','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':id==='landslide'?'context':'subject';result.follow=input.follow!==false;}if(id==='heat')result.illustrated=input.illustrated!==false;if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
+  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:id==='landslide'?['context','roads','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':id==='landslide'?'context':id==='debris'?'path':'subject';result.follow=input.follow!==false;}if(id==='heat')result.illustrated=input.illustrated!==false;if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
   for(const f of effectFields[id]??[]) result[f.key]=Number.isFinite(input[f.key])?clamp(input[f.key],f.min,f.max):f.value;
   return result;
 }
@@ -47,7 +47,7 @@ export function effectSnapshot(id,n,settings,time=0,activated=false,windHistory=
     result.rain=n.value;result.antecedent=n.secondary;result.blocked=n.extra.inspection==='发现堵塞';result.abnormal=n.extra.inspection==='发现异常水流';
     result.distance=activated?c.velocity*Math.max(0,time):0;
     result.notes=[`雨强 ${n.value} mm/h · 前期雨量 ${n.secondary} mm`,`${n.extra.inspection} · 外部${n.extra.external}`,activated?`假定速度 ${c.velocity} m/s · 宽度 ${c.width} m · 含固 ${c.solids}%；不是由雨量计算`:'尚未启动泥流；雨量不等于灾害发生'];
-    result.legend=['浅褐虚线：DEM下坡方向示意','棕色带与颗粒：主动启动的泥流'];
+    result.legend=['浅褐虚线：待演示的DEM下坡路径，非实测沟道','起伏棕色流面与滚动颗粒：手动假定','末端堆积：视觉示意，不是实际影响范围'];
   }
   return result;
 }

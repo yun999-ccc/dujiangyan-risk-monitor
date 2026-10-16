@@ -40,7 +40,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
   }
   $('#ice-temperature').onchange=e=>{if(e.target.value!==''&&e.target.checkValidity()){updateValue(getState(),'ice',e.target.valueAsNumber);render();}};$('#ice-surface').onchange=e=>{updateNode(getState(),'ice','surface',e.target.value);render();};for(const key of ['accumulate','snowfall'])$('#ice-'+key).onchange=e=>{const {c,p}=setup('ice');c[key]=e.target.checked;p.running=false;if(key==='accumulate'){p.time=0;p.activated=false;}render();};$('#ice-closeup').onclick=()=>{getScene()?.focusIceDetail?.();};
   const processControls=mountProcessControls(getState,setup,render,getScene);
-  for(const id of effectIds){const {p,c}=setup(id);p.running=false;if(['heat','forest','landslide'].includes(id))c.view='context';if(reduced)c.motion=false;p.speed=[1,3,5,10].includes(p.speed)?p.speed:1;p.time=Math.max(0,Number.isFinite(p.time)?p.time:0);}
+  for(const id of effectIds){const {p,c}=setup(id);p.running=false;if(['heat','forest','landslide'].includes(id))c.view='context';if(id==='debris')c.view='path';if(reduced)c.motion=false;p.speed=[1,3,5,10].includes(p.speed)?p.speed:1;p.time=Math.max(0,Number.isFinite(p.time)?p.time:0);}
   function snapshot(id) {
     const {s,n,c,p}=setup(id);
     if(!n.unknown){if(id==='wind'){p.time=Math.min(p.time,n.secondary);if(n.secondary===0||n.value===0||p.time>=n.secondary)p.running=false;syncWindHistory(p,windConfig(n,c));}const snap=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);if(processIds.includes(id)&&(snap.duration===0||id==='heat'&&(snap.heatGain===0||c.rise===0)||id==='forest'&&c.fireMode==='fire'&&(c.radius===0||c.power===0)||id==='landslide'&&c.travel===0||id==='debris'&&c.velocity===0))p.running=false;p.time=Math.min(p.time,snap.duration);s.effectLastValid[id]=effectSnapshot(id,n,c,p.time,p.activated,p.windHistory);return s.effectLastValid[id];}
@@ -59,7 +59,8 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     if(!c.motion){toast('动态效果已关闭，可拖动效果时间线查看静态阶段');return;}
     const snap=snapshot(id);c=setup(id).c;if(snap.duration<=0){toast('持续时间为零，不启动效果');return;}
     if(id==='forest'){if(c.radius<=0||c.power<=0)return;const fresh=c.fireMode!=='fire'||!p.activated||p.time>=snap.duration;c.fireMode='fire';if(fresh){p.time=0;c.view='subject';getState().mode='3d';getScene()?.setMode('3d');getScene()?.focusProcess?.(id,'subject');}}
-    if(p.time>=snap.duration)p.time=0;p.activated=true;p.running=true;if(['ice','heat','forest'].includes(id))render();else locate();
+    const firstDebris=id==='debris'&&(!p.activated||p.time>=snap.duration);if(firstDebris)c.view='subject';
+    if(p.time>=snap.duration)p.time=0;p.activated=true;p.running=true;if(id==='debris'&&!firstDebris||['ice','heat','forest'].includes(id))render();else locate();
   };
   $('#effect-rewind').onclick=()=>{const {p}=setup(getState().selected);p.time=0;p.running=false;p.activated=false;if(getState().selected==='wind'){delete p.windHistory;delete p.windKey;}render();};
   $('#effect-seek').oninput=e=>{const {n,p}=setup(getState().selected);if(n.unknown)return;p.time=+e.target.value;p.activated=p.time>0;p.running=false;render();};
@@ -83,7 +84,7 @@ export function mountHazardEffects(getState,getScene,render,toast) {
     heat:'内置绘图生成透明材质用于热浪视觉演示；默认增强示意用暖白波纹和放大的高度表达升腾，并非真实发光空气。可关闭增强，仅观察背景扭曲。温度、视觉倍率与遮阴决定强弱，上升速度为动画倍率。地表柔和色带不表示实测地表温度，热浪不是空气折射或人体风险求解。湿度仅作背景。',
     forest:'火险背景与独立火情模式分开。火源范围、增长速度和持续时间为手动假定，风向只驱动烟雾偏移。不是林火预测或燃烧求解；未设置火情模式与启动过程不会生成火焰。',
     landslide:'箭头将毫米级监测位移放大显示。滑移距离和时长为独立手动假定；默认待演示坡面及其裂缝、纵向滑带、分块和坡脚均为示意。路径只顺应公开DEM下坡方向；不改写真实山体，不计算稳定性、滑体体积守恒或实际堆积范围。',
-    debris:'泥流速度、宽度、含固比例与时长均为手动假定，雨量不推算泥流发生或速度。路径来自局部DEM下坡采样，未核实黄央沟沟道，遇地形低点会停止；不是实际影响范围。泥流采用优先显示的贴地覆盖图层，颗粒循环表达流向，不表示泥流厚度、流量或守恒体积。'
+    debris:'泥流速度、宽度、含固比例与时长均为手动假定，雨量不推算泥流发生或速度。路径来自局部DEM下坡采样，未核实黄央沟沟道，遇地形低点会停止；不是实际影响范围。默认显示待演示路径；起伏流面、前锋团块、滚动碎石和末端堆积为增强视觉示意，表面高度经过放大，不表示实际厚度、流量、质量守恒或道路受灾范围。'
   };
   function refresh() {
     const id=getState().selected;panel.hidden=!effectIds.includes(id);document.body.classList.toggle('effects-layout',!panel.hidden);document.body.classList.toggle('wind-layout',id==='wind');

@@ -239,7 +239,7 @@ assets/         真实运行截图
 
 | 滑移土体与源区 | 泥流前沿与材质 |
 | --- | --- |
-| ![滑坡近景](assets/landslide-strips-preview.png) | ![泥流近景](assets/process-debris-preview.png) |
+| ![滑坡近景](assets/landslide-strips-preview.png) | ![泥流近景](assets/debris-flow-preview.png) |
 
 截图为各过程的固定静态阶段，不能作为真实灾害或工程精度的证据。
 
@@ -250,3 +250,7 @@ assets/         真实运行截图
 2026-10-16通过 OpenStreetMap 官方 API 核查 way 501045901：其几何与项目数据一致，起端节点与 way 501045902 相接，末端节点仅关联该便道记录。未发现可据此补入的延续道路；真实端点、铺装和通行情况尚未现场核查。证据与查询地址见 [road-endpoint-check.json](public/data/road-endpoint-check.json)。既有区域数据仍不完整。
 
 ![滑坡周边道路与延续待核实端点](assets/road-context-preview.png)
+
+## 泥石流动态示意
+
+默认显示DEM下坡路径预览；启动后定位泥流前锋，可切回全范围。原矩形贴图带改为不规则起伏流面、湿润流纹、前缘团块与滚动碎石，终点逐步显示堆积示意。速度、宽度、含固比例和时长可调，暂停冻结，结束可重播。原生成素材 `assets/effects/mud-v1.png` 保留使用。模型未核实真实沟道，不推算实际厚度、流量、守恒体积或道路受灾范围。
