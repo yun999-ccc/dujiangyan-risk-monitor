@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test.setTimeout(90000);
-test.beforeEach(async({page})=>{await page.goto('');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true',{timeout:30000});});
+test.beforeEach(async({page})=>{await page.goto('?area=overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.locator('html')).toHaveAttribute('data-ready','true',{timeout:30000});await page.locator('.reference-monitor-extra>summary').click();});
 const select=async(page,id)=>{await page.locator(`[data-hazard="${id}"]`).click();await expect(page.locator('#effect-title')).not.toBeEmpty();await page.waitForFunction(id=>window.__hazardLayer?.id===id&&window.__hazardLayer.visible,id);};
 test('六类沙盘效果可见、参数改变且无运行错误',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
@@ -28,6 +28,6 @@ test('手机无溢出，减少动态效果默认关闭且可定位静态阶段',
 });
 test('旧数据无有效快照时不伪造现象，效果到终点自动暂停',async({page})=>{
   await page.evaluate(()=>{window.__monitor.state.states.forest.quality='missing';window.__monitor.select('forest');});
-  await expect(page.locator('#effect-readings')).toContainText('暂无有效环境输入');await page.waitForFunction(()=>window.__hazardLayer.id==='forest'&&!window.__hazardLayer.visible);
+  await expect(page.locator('#effect-readings')).toContainText('暂无有效环境输入');await page.waitForFunction(()=>window.__hazardLayer?.id==='forest'&&!window.__hazardLayer.visible);
   await select(page,'landslide');await page.locator('#effect-duration').fill('5');await page.locator('#effect-duration').press('Tab');await page.locator('#effect-speed').selectOption('5');await page.locator('#effect-play').click();await page.waitForFunction(()=>window.__hazardEffects.time===5&&!window.__hazardEffects.running);await expect(page.locator('#effect-time')).toHaveText('5.0 / 5 s');
 });

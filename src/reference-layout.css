@@ -1,0 +1,368 @@
+/* The approved reference compositions, using live controls and existing data. */
+body.reference-layout{--ink:#182839;--muted:#5c6b7e;--line:#e0e7ed;--forest:#355f49;--paper:#f5f8fa;background:var(--paper);color:var(--ink);font-size:14px}
+body.reference-layout .workspace-header{min-height:64px;padding:0 20px;gap:22px}
+body.reference-layout .workspace-header .brand{gap:10px}
+body.reference-layout .workspace-header .brand small{display:none}
+body.reference-layout .workspace-header .workspace-nav a{min-height:62px;gap:10px;padding:0 18px;font-size:15px}
+body.reference-layout .workspace-nav svg{width:23px;height:23px}
+body.reference-layout .workspace-header .actions{display:flex;gap:8px}
+body.reference-layout .workspace-header .actions .btn{min-height:36px;padding:7px 12px;font-size:12px}
+body.reference-layout .workspace-header .time{display:none}
+body.reference-layout .reference-context{margin:0 16px;font-size:12px;color:var(--muted)}
+body.reference-layout .reference-context>summary{min-height:30px;text-align:right;color:#5a7068;font-size:11px}
+body.reference-layout .reference-context .cloud-panel{margin:0 0 8px}
+body.reference-layout .reference-context .link-note{margin:0 0 10px}
+body.reference-layout .reference-context .navline{padding:6px 12px}
+body.reference-layout .reference-intro{padding:6px 12px}
+body.reference-layout .reference-context:not([open])>*:not(summary){display:none}
+body.reference-layout .bottom,body.reference-layout footer{font-size:11px;padding:12px 18px;line-height:1.6}
+
+/* Three-column monitoring workbench: region, scene/history, process/reading. */
+body.monitor-page.reference-layout .workspace,body.monitor-page.reference-layout.hydraulic-layout .workspace{display:grid;grid-template-columns:205px minmax(0,1fr) 340px;gap:12px;margin:0 14px;align-items:start}
+body.monitor-page.reference-layout .maincolumn{display:flex;flex-direction:column;min-width:0;gap:12px}
+body.monitor-page.reference-layout .rightcolumn,body.monitor-page.reference-layout.hydraulic-layout .rightcolumn{display:flex;flex-direction:column;gap:12px;min-width:0}
+body.monitor-page.reference-layout .sidebar{min-height:820px;border-radius:6px}
+body.monitor-page.reference-layout .sidebar .panelhead{padding:16px}
+body.monitor-page.reference-layout .zone-switch{padding:0 12px 12px}
+body.monitor-page.reference-layout .risk-item{min-height:54px;padding:10px;margin:4px 0}
+body.monitor-page.reference-layout .risk-item .riskname{font-size:15px}
+body.monitor-page.reference-layout .risk-item .riskicon{color:#34465b;width:28px;height:28px}
+body.monitor-page.reference-layout .risk-item.active{background:#e6f1ec;border-color:transparent;border-left:4px solid #355f49;border-radius:4px}
+body.monitor-page.reference-layout .risk-item.active .riskicon{color:#355f49}
+body.monitor-page.reference-layout .sidebar-foot{font-size:11px}
+body.monitor-page.reference-layout .map-header{min-height:50px;padding:9px 12px}
+body.monitor-page.reference-layout .map-header .map-title strong{font-size:16px}
+body.monitor-page.reference-layout .map-title small{font-size:10px}
+body.monitor-page.reference-layout .canvaswrap,body.monitor-page.reference-layout.hydraulic-layout .canvaswrap{height:clamp(410px,48vh,600px)}
+body.monitor-page.reference-layout .map-tools{top:64px;right:12px}
+body.monitor-page.reference-layout .map-tools .iconbtn{width:36px;height:36px;background:#ffffffed}
+body.monitor-page.reference-layout .map-panel{border-radius:6px;overflow:hidden}
+body.monitor-page.reference-layout .reference-playback{background:#fff;border-top:1px solid var(--line)}
+body.monitor-page.reference-layout .reference-playback:empty{display:none}
+body.monitor-page.reference-layout .reference-playback .hydraulic-actions,body.monitor-page.reference-layout .reference-playback .effect-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0}
+body.monitor-page.reference-layout .reference-playback :is(button,select){min-height:36px;font-size:12px;border-radius:5px}
+body.monitor-page.reference-layout .reference-playback :is(.hydraulic-seek-label,.effect-seek-label,.process-timeline){display:block;padding:0 12px 10px;font-size:11px;margin:0}
+body.monitor-page.reference-layout .reference-playback input[type=range]{width:100%;accent-color:var(--forest)}
+body.monitor-page.reference-layout .reference-playback .hydraulic-actions label{display:flex;align-items:center;gap:5px;font-size:11px}
+body.monitor-page.reference-layout .reference-playback .process-transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:0}
+body.monitor-page.reference-layout .reference-playback .process-transport>div{display:grid;gap:3px}
+body.monitor-page.reference-layout .reference-playback .process-transport small{font-size:11px;color:var(--muted)}
+body.monitor-page.reference-layout .reference-playback .process-transport label{display:flex;align-items:center;gap:5px;font-size:12px}
+body.monitor-page.reference-layout .reference-scene-tools{border-top:1px solid var(--line)}
+body.monitor-page.reference-layout .scene-caption{font-size:11px;line-height:1.5;padding:7px 12px}
+body.monitor-page.reference-layout .map-toolbar{gap:6px;padding:8px 10px}
+body.monitor-page.reference-layout .map-toolbar button{font-size:10px;min-height:32px;padding:6px 8px}
+body.monitor-page.reference-layout .map-panel .map-footer{font-size:10px;padding:6px 10px}
+body.monitor-page.reference-layout .map-context{font-size:11px}
+body.monitor-page.reference-layout .map-context summary{min-height:30px}
+body.monitor-page.reference-layout .reference-process-slot:empty{display:none}
+body.monitor-page.reference-layout .reference-process-slot>section{border:1px solid var(--line);background:white;border-radius:6px;margin:0 0 12px;padding:16px}
+body.monitor-page.reference-layout .reference-process-slot>section[hidden]{display:none}
+body.monitor-page.reference-layout .reference-process-slot .process-heading{display:block;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}
+body.monitor-page.reference-layout .reference-process-slot .process-heading strong{font-size:16px;color:var(--ink)}
+body.monitor-page.reference-layout .reference-process-slot .process-heading span{display:block;font-size:11px;margin-top:4px}
+body.monitor-page.reference-layout .reference-process-slot .process-variable-grid,body.monitor-page.reference-layout .reference-process-slot .effect-fields,body.monitor-page.reference-layout .reference-process-slot .hydraulic-inputs{grid-template-columns:minmax(0,1fr);gap:14px}
+body.monitor-page.reference-layout .reference-process-slot :is(label,.control-title){font-size:13px}
+body.monitor-page.reference-layout .reference-process-slot input[type=number]{min-height:38px;background:#fff;font-size:14px}
+body.monitor-page.reference-layout .reference-process-slot input[type=range]{accent-color:var(--forest);height:18px}
+body.monitor-page.reference-layout .reference-process-slot .process-views{display:flex;gap:6px;margin:14px 0}
+body.monitor-page.reference-layout .reference-process-slot .process-views button{min-height:34px;font-size:11px;padding:7px 9px}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-heading{display:block;padding:0}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-heading h2{font-size:16px;line-height:1.5;margin:6px 0}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-heading p{font-size:11px;line-height:1.7}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-tabs{margin-top:10px}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-panel{padding:14px}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body.monitor-page.reference-layout .reference-process-slot .hydraulic-presets button{font-size:11px;min-height:36px;white-space:normal;padding:7px}
+body.monitor-page.reference-layout .reference-process-slot .river-scope-context{display:block;margin:8px 0;padding:10px}
+body.monitor-page.reference-layout .reference-process-slot .river-scope-context button{margin-top:8px;font-size:11px}
+body.monitor-page.reference-layout .reference-reading{padding:16px}
+body.monitor-page.reference-layout .reference-reading h2{font-size:16px;margin:0 0 14px}
+body.monitor-page.reference-layout .reading-source{font-size:11px;color:var(--muted)}
+body.monitor-page.reference-layout .snapshot-value{font-size:38px;color:#244f3c;background:#edf5f1;border-radius:6px;padding:16px;margin-top:10px;font-weight:650}
+body.monitor-page.reference-layout .snapshot-value small{font-size:16px;margin-left:8px}
+body.monitor-page.reference-layout .reference-reading p{font-size:12px;line-height:1.7;color:var(--muted)}
+body.monitor-page.reference-layout .rightpanel .panelhead h2{font-size:16px}
+body.monitor-page.reference-layout .node-info{padding:12px 16px}
+body.monitor-page.reference-layout .node-info h3{font-size:14px;margin:5px 0}
+body.monitor-page.reference-layout .node-info :is(p,.node-coordinate){font-size:11px}
+body.monitor-page.reference-layout .decision-note{font-size:11px}
+body.monitor-page.reference-layout .reference-monitor-extra{font-size:12px;margin-top:16px;border-top:1px solid var(--line);padding-top:6px}
+body.monitor-page.reference-layout .reference-monitor-extra summary{color:var(--forest);font-weight:550}
+body.monitor-page.reference-layout .reference-secondary{order:20}
+body.monitor-page.reference-layout .reference-secondary>h2{font-size:16px;margin:8px 0}
+body.monitor-page.reference-layout .reference-secondary>p{font-size:12px;color:var(--muted);margin:0 0 12px}
+body.monitor-page.reference-layout .reference-secondary>section{margin:0 0 12px}
+body.monitor-page.reference-layout .timeline-panel{margin-top:0}
+body.monitor-page.reference-layout .data-strip{display:flex;justify-content:space-between}
+body.monitor-page.reference-layout .data-stat{padding:10px 14px}
+body.monitor-page.reference-layout .data-stat strong{font-size:20px;line-height:1.4}
+body.monitor-page.reference-layout .data-stat span{font-size:11px}
+body.monitor-page.reference-layout .chart-wrap{height:170px}
+body.monitor-page.reference-layout .chart-header{padding:12px 14px 0}
+body.monitor-page.reference-layout .river-results{padding:16px;margin:0;border-radius:6px}
+body.monitor-page.reference-layout .river-results-heading h2{font-size:16px;line-height:1.5}
+body.monitor-page.reference-layout .hydraulic-stats{gap:6px;margin:12px 0}
+body.monitor-page.reference-layout .hydraulic-stats>div{padding:10px}
+body.monitor-page.reference-layout .hydraulic-stats strong{font-size:19px}
+body.monitor-page.reference-layout .river-house-gap{font-size:11px;line-height:1.7;margin:8px 0}
+body.monitor-page.reference-layout #river-history{height:160px}
+body.monitor-page.reference-layout .reference-river-detail>summary{font-size:12px;color:var(--forest)}
+
+/* Station reference: narrow instrument, broad form, actual last receipt. */
+body.device-page.reference-layout main,body.terminal-page.reference-layout main{padding:10px 20px 24px}
+body.device-page.reference-layout .intro{display:flex;align-items:center;gap:18px;margin:0 0 16px}
+body.device-page.reference-layout .intro h1,body.terminal-page.reference-layout .intro h1{font-size:26px;margin:0;font-weight:700}
+body.device-page.reference-layout .intro p{font-size:13px;margin:0}
+body.device-page.reference-layout .station-picker{padding:0 0 10px;border:0;background:transparent;margin:0 0 12px}
+body.device-page.reference-layout .station-picker .station-heading{padding:0 2px 8px}
+body.device-page.reference-layout .station-picker .station-heading h2{font-size:12px;color:var(--muted);display:inline}
+body.device-page.reference-layout .station-picker .station-heading p{display:inline;margin-left:10px;font-size:11px}
+body.device-page.reference-layout .station-tabs{margin:0;gap:0;grid-template-columns:repeat(8,minmax(0,1fr));background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+body.device-page.reference-layout .station-tabs button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:10px 4px;border:0;border-right:1px solid var(--line);border-radius:0;font-size:14px}
+body.device-page.reference-layout .station-tabs svg{height:23px;width:23px;flex-shrink:0}
+body.device-page.reference-layout .station-tabs small{display:none}
+body.device-page.reference-layout .station-tabs button.active{background:var(--forest);color:#fff}
+body.device-page.reference-layout .device-grid{grid-template-columns:minmax(245px,1fr) minmax(350px,1.45fr) minmax(265px,1fr);gap:10px;align-items:stretch}
+body.device-page.reference-layout .device-grid>.card{padding:20px;border-radius:6px}
+body.device-page.reference-layout .device-face h2,body.device-page.reference-layout .controls h2,body.device-page.reference-layout .station-details h2{font-size:19px;margin:0 0 16px}
+body.device-page.reference-layout .eyebrow{font-size:15px}
+body.device-page.reference-layout .station-source{font-size:11px}
+body.device-page.reference-layout .display{display:grid;grid-template-columns:68px minmax(0,1fr);grid-template-rows:auto auto 1fr auto;background:transparent;border:0;padding:0;margin-top:24px;gap:10px 20px}
+body.device-page.reference-layout .display>span{grid-column:2;grid-row:1;font-size:12px;align-self:end}
+body.device-page.reference-layout #depth-display{grid-column:2;grid-row:2;font-size:48px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+body.device-page.reference-layout #depth-display small{font-size:17px;margin-left:6px}
+body.device-page.reference-layout .station-gauge{grid-column:1;grid-row:1/5;display:flex;height:280px;gap:8px;flex-direction:row-reverse}
+body.device-page.reference-layout .station-gauge[hidden]{display:none}
+body.device-page.reference-layout .tank{height:280px;width:34px;min-width:34px;margin:0;border:2px solid #b7c5ce;border-radius:12px;background:#f5f9fc}
+body.device-page.reference-layout #water-fill{background:#35a5ce}
+body.device-page.reference-layout .gauge-ticks{display:flex;flex-direction:column;justify-content:space-between;font-size:12px;color:var(--muted);width:24px}
+body.device-page.reference-layout #station-secondary{grid-column:2;grid-row:3;background:#f5f8fa;padding:12px;border-radius:5px;align-self:start;font-size:12px}
+body.device-page.reference-layout #device-state{grid-column:2;grid-row:4;font-size:12px;margin:0}
+body.device-page.reference-layout .display:has(.station-gauge[hidden]){grid-template-columns:1fr}
+body.device-page.reference-layout .display:has(.station-gauge[hidden])>*{grid-column:1}
+body.device-page.reference-layout .controls label{margin:14px 0 7px;font-size:13px}
+body.device-page.reference-layout .station-fields{gap:0 12px}
+body.device-page.reference-layout .controls .subtle{font-size:11px;margin:8px 0}
+body.device-page.reference-layout .controls :is(input[type=number],select){min-height:38px;padding:8px;font-size:14px}
+body.device-page.reference-layout .controls .presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0}
+body.device-page.reference-layout .controls .presets button{padding:8px 4px;font-size:12px;min-height:40px}
+body.device-page.reference-layout .controls [data-station-preset='1']{background:#fffcf0;border-color:#efe1b6;color:#8c641b}
+body.device-page.reference-layout .controls [data-station-preset='2']{background:#fff2ef;border-color:#f2d0c7;color:#ac4232}
+body.device-page.reference-layout .controls .buttons{margin:16px 0 10px;gap:6px}
+body.device-page.reference-layout .controls .buttons button{padding:8px 10px;font-size:12px;min-height:40px}
+body.device-page.reference-layout #station-last-receipt{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:16px}
+body.device-page.reference-layout .receipt-value{font-size:50px;font-weight:700;color:#1e503a;line-height:1.3}
+body.device-page.reference-layout .receipt-value small{font-size:19px;margin-left:8px}
+body.device-page.reference-layout .receipt-time{font-size:12px;color:var(--muted)}
+body.device-page.reference-layout .receipt-quality{display:inline-block;background:#edf5f1;color:#355f49;padding:5px 8px;border-radius:4px;font-size:12px}
+body.device-page.reference-layout .draft-difference{font-size:12px;color:#986523}
+body.device-page.reference-layout .receipt-empty{font-size:42px;color:#6c7a88}
+body.device-page.reference-layout .receipt-empty p{font-size:12px}
+body.device-page.reference-layout .station-details h3{font-size:13px;margin:0}
+body.device-page.reference-layout .station-meta{font-size:11px;display:block}
+body.device-page.reference-layout .station-meta>div{display:grid;grid-template-columns:85px 1fr;padding:8px 0;gap:10px}
+body.device-page.reference-layout .station-meta dd{font-size:12px}
+body.device-page.reference-layout .station-records{padding:16px 20px}
+body.device-page.reference-layout .station-record-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px;margin-top:12px}
+body.device-page.reference-layout .station-table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.6;text-align:left;table-layout:fixed}
+body.device-page.reference-layout .station-table th{background:#f5f8fa;font-weight:500;color:var(--muted);padding:8px}
+body.device-page.reference-layout .station-table td{padding:8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+body.device-page.reference-layout .station-table th:nth-child(2){width:27%}
+body.device-page.reference-layout .station-history h3{font-size:13px;margin:0 0 8px}
+body.device-page.reference-layout .station-history svg{width:100%;height:150px;display:block}
+
+/* Terminal reference: live status badges, full-width alert rows, compact others. */
+body.terminal-page.reference-layout .intro{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 20px;margin:0 0 18px;align-items:center}
+body.terminal-page.reference-layout .intro>p{grid-column:1;grid-row:2;font-size:12px;margin:0}
+body.terminal-page.reference-layout .intro>.terminal-toolbar{grid-column:2;grid-row:2;justify-content:flex-end}
+body.terminal-page.reference-layout .terminal-toolbar p{font-size:11px;margin:0}
+body.terminal-page.reference-layout #terminal-summary{grid-column:2;grid-row:1;display:flex;gap:8px;align-items:center;padding:0;margin:0;background:transparent;border:0}
+body.terminal-page.reference-layout #terminal-summary>span{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:12px;border-radius:6px;background:#edf3f7;color:#536574;white-space:nowrap}
+body.terminal-page.reference-layout #terminal-summary b{font-size:23px;line-height:1}
+body.terminal-page.reference-layout #terminal-summary .summary-alarm{background:#fff0f1;color:#b74639}
+body.terminal-page.reference-layout #terminal-summary .summary-unread{background:#fff7e9;color:#976619}
+body.terminal-page.reference-layout #terminal-summary .summary-normal{background:#edf7f2;color:#38694f}
+body.terminal-page.reference-layout #terminal-summary .receive-indicator{font-size:11px;padding:6px 9px;background:#edf7f2;color:#38694f}
+body.terminal-page.reference-layout .terminal-layout{display:grid;grid-template-columns:minmax(0,2.25fr) minmax(285px,1fr);gap:12px}
+body.terminal-page.reference-layout .risk-grid{display:flex;flex-direction:column;gap:12px;min-width:0}
+body.terminal-page.reference-layout :is(.terminal-attention,.terminal-others){background:white;border:1px solid var(--line);border-radius:7px;padding:16px}
+body.terminal-page.reference-layout :is(.terminal-attention,.terminal-others)>h2{font-size:18px;margin:0 0 14px}
+body.terminal-page.reference-layout :is(.terminal-attention,.terminal-others)>h2 small{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px}
+body.terminal-page.reference-layout .risk-card{display:grid;grid-template-columns:44px minmax(0,1.4fr) 105px minmax(0,1.1fr) auto;gap:8px 14px;border-radius:6px;padding:16px;margin-bottom:12px}
+body.terminal-page.reference-layout .risk-card:last-child{margin-bottom:0}
+body.terminal-page.reference-layout .terminal-risk-symbol{grid-column:1;grid-row:1/3;display:grid;place-items:center;width:40px;height:40px;background:#edf4f7;border-radius:6px;color:#3986a3}
+body.terminal-page.reference-layout .terminal-risk-symbol svg{width:27px;height:27px}
+body.terminal-page.reference-layout .terminal-risk-symbol.wind{color:#ae771c;background:#fff4df}
+body.terminal-page.reference-layout .terminal-risk-symbol.heat{color:#b67632}
+body.terminal-page.reference-layout .terminal-risk-symbol.forest{color:#366c52}
+body.terminal-page.reference-layout .risk-heading{grid-column:2;grid-row:1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+body.terminal-page.reference-layout .risk-heading h2{font-size:16px;margin:0}
+body.terminal-page.reference-layout .risk-heading .risk-status{font-size:11px;background:#eef2f5;padding:3px 6px;border-radius:4px;margin:0;line-height:1.5}
+body.terminal-page.reference-layout .alarm .risk-status{background:#ffe4df;color:#ad4433}
+body.terminal-page.reference-layout .watch .risk-status{background:#fff0cb;color:#936815}
+body.terminal-page.reference-layout .risk-heading .led{width:7px;height:7px}
+body.terminal-page.reference-layout .risk-card .reading{grid-column:3;grid-row:1/3;font-size:29px;align-self:start;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+body.terminal-page.reference-layout .reading-kind{display:block;font-size:10px;font-weight:400;color:var(--muted);letter-spacing:0;margin-bottom:3px}
+body.terminal-page.reference-layout .reading small{font-size:12px;padding-left:4px}
+body.terminal-page.reference-layout .terminal-risk-meta{grid-column:4;grid-row:1/3;display:flex;flex-direction:column;gap:4px;font-size:11px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}
+body.terminal-page.reference-layout .risk-card .ack-row{grid-column:5;grid-row:1/3;margin:0;padding:0;border:0;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:6px}
+body.terminal-page.reference-layout .ack-row button{font-size:12px;min-height:38px;white-space:nowrap}
+body.terminal-page.reference-layout .ack-row small{font-size:10px}
+body.terminal-page.reference-layout .risk-card .risk-action{grid-column:2/5;margin:0;font-size:12px;line-height:1.7;background:#f5f7f9;padding:6px 9px;border-radius:4px}
+body.terminal-page.reference-layout .risk-card .last-level{grid-column:2/6;font-size:11px;margin:0;line-height:1.6}
+body.terminal-page.reference-layout .risk-card>details{grid-column:2/5;font-size:12px;border-top:0;padding:0}
+body.terminal-page.reference-layout .risk-card>details summary{min-height:28px;font-size:11px}
+body.terminal-page.reference-layout .risk-card>.scene-link{grid-column:5;grid-row:3/5;font-size:10px;margin:0;align-self:end;white-space:nowrap;min-height:28px}
+body.terminal-page.reference-layout .compact-risk{grid-template-columns:30px minmax(0,1.6fr) 90px minmax(0,1fr) auto;padding:12px 0;border:0!important;border-top:1px solid var(--line)!important;border-radius:0;background:white!important;gap:5px 10px;margin:0}
+body.terminal-page.reference-layout .compact-risk .terminal-risk-symbol{width:28px;height:28px;background:transparent}
+body.terminal-page.reference-layout .compact-risk .risk-heading h2{font-size:13px}
+body.terminal-page.reference-layout .compact-risk .reading{font-size:19px}
+body.terminal-page.reference-layout .compact-risk .reading-kind{font-size:9px}
+body.terminal-page.reference-layout .compact-risk .terminal-risk-meta{font-size:10px}
+body.terminal-page.reference-layout .compact-risk .risk-action{font-size:11px;padding:0;background:transparent;color:var(--muted)}
+body.terminal-page.reference-layout .compact-risk .ack-row button{font-size:10px;min-height:30px;padding:6px 8px}
+body.terminal-page.reference-layout .compact-risk .ack-row small{font-size:10px}
+body.terminal-page.reference-layout .terminal-side{display:flex;flex-direction:column;gap:12px}
+body.terminal-page.reference-layout .terminal-side>.card{padding:18px;border-radius:6px}
+body.terminal-page.reference-layout .terminal-side h2{font-size:18px;margin:0 0 16px}
+body.terminal-page.reference-layout .evidence-title{display:flex;align-items:center;gap:12px;padding:10px;background:#f5f9fc;border-radius:5px}
+body.terminal-page.reference-layout .evidence-title h3{font-size:16px;margin:0}
+body.terminal-page.reference-layout .evidence-title p{font-size:11px;margin:5px 0 0;color:var(--muted)}
+body.terminal-page.reference-layout .terminal-evidence dl>div{display:grid;grid-template-columns:75px minmax(0,1fr);gap:12px;font-size:12px;padding:10px 0;line-height:1.7}
+body.terminal-page.reference-layout .terminal-evidence dt{color:var(--muted)}
+body.terminal-page.reference-layout .terminal-evidence dd{margin:0;overflow-wrap:anywhere}
+body.terminal-page.reference-layout .terminal-evidence>div>p{font-size:12px;line-height:1.8;color:var(--muted);background:#f7f9fb;padding:12px}
+body.terminal-page.reference-layout .terminal-empty{font-size:12px;color:var(--muted);line-height:1.8}
+
+@media(min-width:1700px){body.monitor-page.reference-layout .workspace,body.monitor-page.reference-layout.hydraulic-layout .workspace{grid-template-columns:220px minmax(0,1fr) 370px}}
+@media(max-width:1200px){
+ body.monitor-page.reference-layout .workspace,body.monitor-page.reference-layout.hydraulic-layout .workspace{grid-template-columns:160px minmax(0,1fr) 290px}
+ body.reference-layout .workspace-header{gap:12px;padding:0 14px}
+ body.reference-layout .workspace-header .workspace-nav a{padding:0 10px;font-size:13px}
+ body.reference-layout .workspace-header .sim-label{font-size:10px}
+ body.device-page.reference-layout .device-grid{grid-template-columns:minmax(200px,.9fr) minmax(290px,1.3fr) minmax(220px,1fr)}
+ body.device-page.reference-layout .device-grid>.card{padding:16px}
+ body.terminal-page.reference-layout #terminal-summary{gap:5px;flex-wrap:wrap;justify-content:flex-end}
+ body.terminal-page.reference-layout #terminal-summary>span{padding:8px 10px;font-size:11px;gap:6px}
+ body.terminal-page.reference-layout #terminal-summary .receive-indicator{flex-basis:100%;justify-content:flex-end;background:transparent}
+ body.terminal-page.reference-layout .risk-card{grid-template-columns:32px minmax(0,1.4fr) 80px auto;gap:8px}
+ body.terminal-page.reference-layout .terminal-risk-meta{grid-column:2/4;grid-row:2;flex-direction:row;flex-wrap:wrap;font-size:10px}
+ body.terminal-page.reference-layout .risk-card .reading{grid-column:3;grid-row:1;font-size:24px}
+ body.terminal-page.reference-layout .risk-card .ack-row{grid-column:4}
+ body.terminal-page.reference-layout .risk-card .risk-action{grid-column:2/4}
+ body.terminal-page.reference-layout .risk-card .last-level{grid-column:2/5}
+ body.terminal-page.reference-layout .risk-card>details{grid-column:2/4}
+ body.terminal-page.reference-layout .risk-card>.scene-link{grid-column:4}
+}
+@media(max-width:960px){
+ body.monitor-page.reference-layout .workspace,body.monitor-page.reference-layout.hydraulic-layout .workspace{grid-template-columns:150px minmax(0,1fr)}
+ body.monitor-page.reference-layout .rightcolumn,body.monitor-page.reference-layout.hydraulic-layout .rightcolumn{grid-column:2;display:flex}
+ body.monitor-page.reference-layout .sidebar{grid-row:1/3}
+ body.reference-layout .workspace-header .sim-label{display:none}
+ body.device-page.reference-layout .device-grid{grid-template-columns:minmax(220px,1fr) minmax(0,1.5fr)}
+ body.device-page.reference-layout .station-details{grid-column:1/-1}
+ body.device-page.reference-layout .station-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+ body.device-page.reference-layout .station-tabs button{border-bottom:1px solid var(--line)}
+ body.terminal-page.reference-layout .terminal-layout{grid-template-columns:minmax(0,1fr)}
+ body.terminal-page.reference-layout .terminal-side{display:grid;grid-template-columns:1fr 1fr}
+ body.terminal-page.reference-layout .intro{grid-template-columns:minmax(0,1fr)}
+ body.terminal-page.reference-layout #terminal-summary{grid-column:1;grid-row:3;justify-content:flex-start}
+ body.terminal-page.reference-layout #terminal-summary .receive-indicator{flex-basis:auto}
+ body.terminal-page.reference-layout .intro>.terminal-toolbar{grid-column:1;grid-row:4;justify-content:flex-start}
+ body.terminal-page.reference-layout .intro>p{grid-row:2}
+}
+@media(max-width:760px){
+ body.reference-layout .workspace-header{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:8px 12px 0;gap:4px 8px}
+ body.reference-layout .workspace-header .brand{grid-row:1;grid-column:1}
+ body.reference-layout .workspace-header .headright{display:contents}
+ body.reference-layout .workspace-header .headright .sim-label{display:none}
+ body.reference-layout .workspace-header .headright .iconbtn{grid-row:1;grid-column:2}
+ body.reference-layout .workspace-header .actions{grid-row:3;grid-column:1/-1;display:flex;padding:6px 0 10px}
+ body.reference-layout .workspace-header .actions .btn{flex:1;min-height:40px}
+ body.reference-layout .workspace-header .workspace-nav{grid-row:2;grid-column:1/-1;min-width:0}
+ body.reference-layout .workspace-header .workspace-nav a{min-height:44px;padding:8px 4px;font-size:12px;gap:6px}
+ body.reference-layout .workspace-nav svg{width:18px;height:18px}
+ body.reference-layout .reference-context{margin:0 12px}
+ body.reference-layout .reference-context>summary{font-size:11px;text-align:left;min-height:34px}
+ body.monitor-page.reference-layout .workspace,body.monitor-page.reference-layout.hydraulic-layout .workspace{display:flex;flex-direction:column;margin:0 10px;gap:10px}
+ body.monitor-page.reference-layout .sidebar{min-height:0;width:100%}
+ body.monitor-page.reference-layout .sidebar-foot{display:none}
+ body.monitor-page.reference-layout .sidebar .panelhead{padding:10px 12px}
+ body.monitor-page.reference-layout .sidebar .section-label{font-size:10px;margin:4px 10px}
+ body.monitor-page.reference-layout .sidebar .zone-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:0 8px 6px}
+ body.monitor-page.reference-layout .risk-item{min-height:62px;margin:0;padding:7px 2px}
+ body.monitor-page.reference-layout .risk-item .riskname{font-size:11px}
+ body.monitor-page.reference-layout .rightcolumn,body.monitor-page.reference-layout.hydraulic-layout .rightcolumn{width:100%;grid-column:auto;gap:10px}
+ body.monitor-page.reference-layout .canvaswrap,body.monitor-page.reference-layout.hydraulic-layout .canvaswrap{height:440px}
+ body.monitor-page.reference-layout .map-title strong{font-size:13px!important}
+ body.monitor-page.reference-layout .reference-process-slot>section{padding:14px}
+ body.monitor-page.reference-layout .map-tools{top:68px}
+ body.monitor-page.reference-layout .hydraulic-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.monitor-page.reference-layout .reference-secondary>h2{font-size:15px}
+ body.device-page.reference-layout main,body.terminal-page.reference-layout main{padding:8px 12px 20px}
+ body.device-page.reference-layout .intro{display:block;margin-bottom:12px}
+ body.device-page.reference-layout .intro h1,body.terminal-page.reference-layout .intro h1{font-size:23px}
+ body.device-page.reference-layout .intro p{font-size:12px;margin-top:5px}
+ body.device-page.reference-layout .device-grid{grid-template-columns:minmax(0,1fr)}
+ body.device-page.reference-layout .station-details{grid-column:auto}
+ body.device-page.reference-layout .station-tabs button{font-size:11px;gap:5px;min-height:50px}
+ body.device-page.reference-layout .station-tabs svg{width:19px;height:19px}
+ body.device-page.reference-layout .station-picker .station-heading p{display:none}
+ body.device-page.reference-layout .display{grid-template-columns:68px minmax(0,1fr);margin-top:18px}
+ body.device-page.reference-layout .station-gauge,body.device-page.reference-layout .tank{height:235px}
+ body.device-page.reference-layout .station-record-layout{grid-template-columns:minmax(0,1fr);gap:18px}
+ body.device-page.reference-layout .station-records{padding:14px}
+ body.device-page.reference-layout .station-table{font-size:10px}
+ body.device-page.reference-layout .station-table td,body.device-page.reference-layout .station-table th{padding:6px 4px}
+ body.device-page.reference-layout .station-meta>div{grid-template-columns:90px 1fr}
+ body.terminal-page.reference-layout #terminal-summary{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:6px}
+ body.terminal-page.reference-layout #terminal-summary>span{justify-content:space-between;padding:10px;font-size:11px}
+ body.terminal-page.reference-layout #terminal-summary .receive-indicator{grid-column:1/-1;justify-content:flex-start;padding:4px 0}
+ body.terminal-page.reference-layout .terminal-side{display:flex}
+ body.terminal-page.reference-layout .terminal-toolbar{flex-wrap:wrap;gap:8px}
+ body.terminal-page.reference-layout .terminal-toolbar p{flex-basis:100%;font-size:11px}
+ body.terminal-page.reference-layout :is(.terminal-attention,.terminal-others){padding:12px}
+ body.terminal-page.reference-layout .risk-card{grid-template-columns:28px minmax(0,1fr) auto;gap:8px;padding:12px}
+ body.terminal-page.reference-layout .terminal-risk-symbol{width:26px;height:26px}
+ body.terminal-page.reference-layout .terminal-risk-symbol svg{width:23px;height:23px}
+ body.terminal-page.reference-layout .risk-heading{grid-column:2;gap:5px}
+ body.terminal-page.reference-layout .risk-heading h2{font-size:14px}
+ body.terminal-page.reference-layout .risk-heading .risk-status{font-size:10px}
+ body.terminal-page.reference-layout .risk-card .reading{grid-column:3;font-size:24px}
+ body.terminal-page.reference-layout .terminal-risk-meta{grid-column:2/4;grid-row:2;font-size:10px}
+ body.terminal-page.reference-layout .risk-card .risk-action,body.terminal-page.reference-layout .risk-card .last-level{grid-column:1/-1;font-size:11px}
+ body.terminal-page.reference-layout .risk-card>details{grid-column:1/-1}
+ body.terminal-page.reference-layout .risk-card .ack-row{grid-column:1/-1;grid-row:auto;flex-direction:row;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+ body.terminal-page.reference-layout .risk-card>.scene-link{grid-column:1/-1;grid-row:auto;justify-self:start}
+ body.terminal-page.reference-layout .compact-risk{padding:12px 0}
+ body.terminal-page.reference-layout .compact-risk .reading{font-size:20px}
+}
+body.reference-layout [hidden]{display:none!important}
+body.terminal-page.reference-layout .risk-grid{align-items:stretch;width:100%}
+body.terminal-page.reference-layout .risk-grid>section{width:100%;min-width:0}
+body.terminal-page.reference-layout .compact-risk{grid-template-rows:auto auto}
+body.terminal-page.reference-layout .compact-risk .terminal-risk-meta{grid-column:4/6;grid-row:1/3}
+body.terminal-page.reference-layout .compact-risk>details{grid-column:2/4;grid-row:2}
+body.terminal-page.reference-layout .compact-risk>details[open]{grid-column:2/6;grid-row:3}
+body.terminal-page.reference-layout .compact-risk .ack-row{flex-direction:row;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+body.terminal-page.reference-layout .compact-risk>details .scene-link{display:block}
+body.monitor-page.reference-layout .reference-scene-tools{order:10;background:white}
+body.monitor-page.reference-layout .reference-scene-tools .map-footer{position:static;background:white;width:auto;display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px;font-size:10px;color:var(--muted)}
+body.monitor-page.reference-layout.hydraulic-layout .reference-scene-tools .legend{display:none}
+body.monitor-page.reference-layout .reference-observations>summary{font-size:12px;color:var(--forest)}
+body.monitor-page.reference-layout .reference-observations{margin:8px 0;border-top:1px solid var(--line)}
+body.monitor-page.reference-layout .river-primary-fields label{display:grid;grid-template-columns:minmax(0,1fr) 72px;column-gap:10px;align-items:center}
+body.monitor-page.reference-layout .reference-bound-range{grid-column:1;grid-row:2;min-width:0;width:100%;margin-top:8px}
+body.monitor-page.reference-layout .river-primary-fields input[type=number]{grid-column:2;grid-row:2;min-width:0;width:72px;margin-top:8px}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel{background:white;border:1px solid var(--line);border-radius:6px;padding:14px;margin:0}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .hydraulic-heading h2{font-size:14px;line-height:1.5;margin:5px 0}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .hydraulic-heading{display:block}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .hydraulic-heading p{font-size:11px;line-height:1.6}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .water-eyebrow{font-size:10px}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .river-scope-context{font-size:11px;display:block;padding:8px;margin-top:10px}
+body.monitor-page.reference-layout .rightcolumn>.hydraulic-panel .river-scope-context button{margin-top:8px;font-size:11px;min-height:36px}
+body.device-page.reference-layout .station-boundary-details{font-size:11px;color:var(--muted);margin-top:10px}
+body.device-page.reference-layout .station-boundary-details summary{min-height:30px;color:var(--forest)}
+@media(max-width:1200px){body.terminal-page.reference-layout .compact-risk .terminal-risk-meta{grid-column:2/5;grid-row:2}body.terminal-page.reference-layout .compact-risk>details{grid-column:2/5;grid-row:3}}
+@media(max-width:760px){body.terminal-page.reference-layout .compact-risk .terminal-risk-meta{grid-column:2/4}body.terminal-page.reference-layout .compact-risk>details{grid-column:1/-1}body.terminal-page.reference-layout .compact-risk>details[open]{grid-column:1/-1;grid-row:auto}}
