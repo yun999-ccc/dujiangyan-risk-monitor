@@ -9,7 +9,7 @@ export const effectFields = {
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function effectSettings(id, input={}) {
   const result={motion:input.motion!==false,formation:input.formation===true,gust:input.gust===true};if(id==='ice'){result.accumulate=input.accumulate===true;result.snowfall=input.snowfall!==false;}if(id==='wind')result.view=['field','flag','tree'].includes(input.view)?input.view:'flag';
-  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':'subject';result.follow=input.follow!==false;}if(id==='heat')result.illustrated=input.illustrated!==false;if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
+  if(['heat','forest','landslide','debris'].includes(id)){result.view=(['heat','forest'].includes(id)?['context','subject','source','path']:['subject','source','path']).includes(input.view)?input.view:['heat','forest'].includes(id)?'context':id==='landslide'?'path':'subject';result.follow=input.follow!==false;}if(id==='heat')result.illustrated=input.illustrated!==false;if(id==='forest')result.fireMode=input.fireMode==='fire'?'fire':'risk';
   for(const f of effectFields[id]??[]) result[f.key]=Number.isFinite(input[f.key])?clamp(input[f.key],f.min,f.max):f.value;
   return result;
 }
@@ -41,8 +41,8 @@ export function effectSnapshot(id,n,settings,time=0,activated=false,windHistory=
   } else if(id==='landslide') {
     result.displacement=n.value;result.cracks=['发现裂缝','发现掉块'].includes(n.extra.inspection);
     result.travel=activated?c.travel*progress:0;
-    result.notes=[`位移变化 ${n.value} mm/h · 累计雨量 ${n.secondary} mm`,`${n.extra.inspection} · 外部${n.extra.external}`,activated?`独立滑移示意 ${result.travel.toFixed(1)} / ${c.travel} m，不由监测阈值触发`:'仅监测示意；尚未启动土体滑移'];
-    result.legend=['琥珀箭头：放大的监测位移','棕色土体：手动启动的滑移示意'];
+    result.notes=[`位移变化 ${n.value} mm/h · 累计雨量 ${n.secondary} mm`,`${n.extra.inspection} · 外部${n.extra.external}`,activated?`独立滑移示意 ${result.travel.toFixed(1)} / ${c.travel} m，不由监测阈值触发`:'待演示坡面；尚未启动土体滑移'];
+    result.legend=['上缘深色线：假定裂缝','纵向土色条带：假定滑带','坡脚土石：假定堆积，非实测范围'];
   } else if(id==='debris') {
     result.rain=n.value;result.antecedent=n.secondary;result.blocked=n.extra.inspection==='发现堵塞';result.abnormal=n.extra.inspection==='发现异常水流';
     result.distance=activated?c.velocity*Math.max(0,time):0;
