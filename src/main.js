@@ -1,3 +1,4 @@
+import {applyStationSample,normalizeStationSample,isStationSource} from './station-model.js';
 import {mountCloudPanel} from './cloud-panel.js';
 import {cloud} from './cloud-session.js';
 import {publishState,validSample,linkPrefix,readLink,messageTTL} from './device-link.js';
@@ -17,11 +18,12 @@ import {mountDataProvenance,auditMarkup} from './data-provenance.js';
 const icon=name=>`<i data-lucide="${name.replace(/([a-z0-9])([A-Z])/g,'$1-$2').toLowerCase()}"></i>`;
 const $=s=>document.querySelector(s);const fmtTime=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
 let state=createState();try{const saved=JSON.parse(localStorage.getItem('shanchuan-monitor-v2'));if(saved?.schemaVersion===2&&hazards.every(h=>saved.states?.[h.id]&&Number.isFinite(saved.states[h.id].value)&&saved.states[h.id].extra&&saved.states[h.id].track&&saved.states[h.id].policy&&saved.weather?.[h.zone])&&hazards.some(h=>h.id===saved.selected)){state=saved;state.running=false;}}catch{}
+for(const h of hazards){try{const m=JSON.parse(localStorage.getItem(linkPrefix+'sample:'+h.id));if(m?.schema===2)applyStationSample(state,m)}catch{}}
 let controlPanel,waterView,hydraulicView,lightningView,hazardEffects;let scene,selectedZone='全部区域',toastTimer,mapDrag='rotate';
 const save=()=>{try{localStorage.setItem('shanchuan-monitor-v2',JSON.stringify(state));publishState(state)}catch{}};
 $('#app').innerHTML=`
 <header class="topbar"><div class="brand"><div class="brandmark">${icon('MountainSnow')}</div><div><strong>山川守望</strong><small>都江堰多区域风险模拟</small></div></div><div class="headright"><div class="sim-label"><span class="dot"></span>演示环境 · 非实时预警</div><span class="time" id="wallclock"></span><button class="iconbtn" id="help" aria-label="查看操作说明">${icon('CircleHelp')}</button></div></header>
-<div class="navline"><div class="breadcrumb">${icon('House')}<span>工作空间</span><span>/</span><b>监测模拟</b></div><span class="device-nav"><a href="device.html">虚拟监测盒 ↗</a><a href="terminal.html">警示终端 ↗</a></span></div>
+<div class="navline"><div class="breadcrumb">${icon('House')}<span>工作空间</span><span>/</span><b>监测模拟</b></div><span class="device-nav"><a href="device.html">虚拟监测站 ↗</a><a href="terminal.html">警示终端 ↗</a></span></div>
 <section class="intro"><div><h1>让风险变化，看得见。</h1><p>在三维地形中选择点位，调整环境参数，观察八类风险的模拟响应。</p></div><div class="actions"><button class="btn" id="export">${icon('Download')}导出记录</button><button class="btn primary" id="play">${icon('Play')}<span>开始模拟</span></button></div></section>
 <main class="workspace"><aside class="panel sidebar"><div class="panelhead"><h2>监测范围</h2><span>8 类风险</span></div><div class="section-label">区域筛选</div><div class="zone-switch">${['全部区域','龙池山地区域','河谷居民区','平坝城区'].map((z,i)=>`<button data-zone="${z}" class="${i===0?'active':''}">${z}<span>${i===0?'8':i===1?'5':i===2?'2':'1'}</span></button>`).join('')}</div><div class="section-label">选择风险点位</div><div class="risklist" id="risklist"></div><div class="sidebar-foot"><b>${icon('MapPinned')} 都江堰区域场景</b>建筑轮廓来自公开地图；<br>无高度记录的建筑采用假定高度。<br>模拟阈值不用于现实安全判断。</div></aside>
 <div class="maincolumn"><section class="panel map-panel" aria-label="都江堰三维地形与模拟风险点"><div class="map-header"><div class="map-title"><strong>${icon('MapPinned')}都江堰 · 区域沙盘</strong><small>公开高程 / 垂直夸张 1.8 倍</small></div><div class="segmented"><button id="view3d" class="active" aria-pressed="true">三维沙盘</button><button id="view2d" aria-pressed="false">俯视地图</button></div></div><div id="canvas" class="canvaswrap"><div id="loading" class="map-loading">正在构建地形与点位…</div></div><div class="map-tools"><button class="iconbtn" id="zoom-in" aria-label="放大">${icon('Plus')}</button><button class="iconbtn" id="zoom-out" aria-label="缩小">${icon('Minus')}</button><button class="iconbtn" id="focus" aria-label="定位所选点位">${icon('LocateFixed')}</button><button class="iconbtn" id="reset-camera" aria-label="恢复总览视角">${icon('Expand')}</button></div><div class="map-class-legend"><span><i style="background:#4c7954"></i>山地高程色带</span><span><i style="background:#45a4b5"></i>水系地理底图（非水位）</span><span><i style="background:#ecebdc;border:1px solid #819286"></i>建筑轮廓模型</span><span><i style="background:#42484b"></i>机动车道路深灰 / 便道灰褐 / 步道浅褐 / 隧道虚线</span></div><div class="region-tour"><button data-region="overview" class="active">全区域地形与路网</button><button data-region="mountain">黄央沟片区</button><button data-region="city">城区房屋与公路</button><button data-region="bridge">桥水交叉检查</button></div><div class="map-note">地形与建筑高度 ×1.8 · 树群为装饰<br>窗格 / 路缘 / 标线为示意；水系贴地，非计算水位<br>色圈为风险提示，非淹没边界</div><div class="layer-controls"><button data-layer="terrain" class="active">地形与设施</button><button data-layer="plain">纯地形</button><button data-layer="risk">风险点位</button></div><div class="map-footer"><div class="legend">${levels.map(l=>`<span><i style="background:${l.color}"></i>${l.name}</span>`).join('')}<span><i style="background:#8f9692"></i>数据异常</span></div><span>拖动旋转 · 滚轮缩放 · 点击点位</span></div></section>
@@ -87,7 +89,9 @@ window.addEventListener('beforeunload',()=>{save();scene?.dispose();waterView?.d
 window.addEventListener('storage',e=>{
  if(cloud.enabled)return;
  let m;try{m=JSON.parse(e.newValue)}catch{return}
- if(e.key===linkPrefix+'sample'&&validSample(m)){
+ if(e.key?.startsWith(linkPrefix+'sample:')&&m?.schema===2){
+  try{applyStationSample(state,m);render()}catch{}
+ }else if(e.key===linkPrefix+'sample'&&validSample(m)){
   updateValue(state,'water',m.value);updateNode(state,'water','fault',false);updateNode(state,'water','quality',m.quality);
   state.states.water.source='虚拟监测盒 WATER-01';state.states.water.deviceAt=m.at;render();
  }else if(e.key===linkPrefix+'ack'&&m&&typeof m.id==='string'&&hazards.some(h=>h.id===m.id)&&readLink(m.id)?.eventId===m.eventId&&Number.isFinite(m.at)&&Math.abs(Date.now()-m.at)<messageTTL){
@@ -95,10 +99,7 @@ window.addEventListener('storage',e=>{
  }
 });
 setInterval(()=>{
- const n=state.states.water;
- if(n.source==='虚拟监测盒 WATER-01'&&Date.now()-n.deviceAt>messageTTL&&n.quality==='valid'){
-  updateNode(state,'water','quality','expired');n.source='虚拟监测盒 WATER-01';render();
- }
+ let expired=false;for(const h of hazards){const n=state.states[h.id],source=n.source;if(isStationSource(source)&&Date.now()>Math.min(n.deviceAt+messageTTL,n.stationExpiresAt??Infinity)&&n.quality==='valid'){updateNode(state,h.id,'quality','expired');n.source=source;expired=true;}}if(expired)render();
  publishState(state);
 },2000);
 
