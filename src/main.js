@@ -1,3 +1,5 @@
+import {mountCloudPanel} from './cloud-panel.js';
+import {cloud} from './cloud-session.js';
 import {publishState,validSample,linkPrefix,readLink,messageTTL} from './device-link.js';
 import './style.css';
 import {createIcons,MountainSnow,CircleHelp,House,Download,Play,Pause,MapPinned,Plus,Minus,LocateFixed,Expand,RadioTower,RotateCcw,Info,CircleCheck,TriangleAlert,ShieldAlert,Unplug,Waves,Snowflake,Zap,Wind,ThermometerSun,Trees,Mountain,Activity} from 'lucide';
@@ -28,6 +30,7 @@ $('#app').innerHTML=`
 <footer class="bottom"><span>本系统用于竞赛演示。地图高程来自公开数据；建筑轮廓来自公开地图，缺失高度采用假定值；设备、风险等级和读数为模拟。</span><button id="sources">数据来源与模型说明</button></footer><div class="toast" id="toast" role="status"></div>
 <dialog id="info-dialog"><button class="btn close" id="close-dialog">关闭</button><div id="dialog-content"></div></dialog>`;
 mountMapShell();
+mountCloudPanel();
 const dataProvenance=mountDataProvenance();
 createIcons({icons,attrs:{class:'icon'}});
 function selected(){return hazards.find(h=>h.id===state.selected)}
@@ -70,7 +73,7 @@ for(const mode of ['3d','2d'])$(`#view${mode}`).onclick=()=>{if(state.mode===mod
 $('#export').onclick=()=>{const contents={project:'山川守望·监测模拟',exportedAt:new Date().toISOString(),geometryEvidence:dataProvenance.report,disclaimer:'全部读数与阈值为模拟；点位定位来源见页面说明，不能用于现实预警',state:hydraulicView?.active?hydraulicView.exportData():state};const url=URL.createObjectURL(new Blob([JSON.stringify(contents,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='山川守望-模拟记录.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('模拟记录已导出')};
 function openDialog(html){$('#dialog-content').innerHTML=html;$('#info-dialog').showModal()}
 $('#close-dialog').onclick=()=>$('#info-dialog').close();$('#info-dialog').onclick=e=>{if(e.target===$('#info-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close()}};
-$('#help').onclick=()=>openDialog(`<h2>使用模拟实验台</h2><p>六类新增现象在主沙盘显示。选择风险后，下方“变量与现象”说明各输入如何影响画面。点击“定位效果”可近看，播放效果、暂停或拖动独立时间线查看阶段。动态关闭保留当前静态阶段。滑坡与泥石流必须主动启动运动示意，不由监测阈值自动触发；其距离、速度与范围为假定。冰雪形成示意须主动启用，森林烟柱须设置巡查烟火记录。数据未知时冻结最后有效效果。效果回放不清除巡查记录或监测预警。</p><p>选择积水可查看道路局部近景，使用近景水深滑杆或右侧精确输入同步调整。0 cm 无水；波纹可关闭，启用片区模拟降雨且雨强大于零时才显示雨滴涟漪。暂停停止水位推进；数据异常保留最后有效水面。</p><ol><li>选择风险，使用数字框精确输入或滑杆调整；手动模式参数保持。</li><li>补充路面、巡查、活动与数据状态，查看判断依据。</li><li>情景模式下，为需要变化的主参数勾选轨迹并设置目标值；积水也可开启涨退速度演算。</li><li>可启用片区降雨，并勾选积水、滑坡或泥石流的关联。仅泥石流读取共享雨强，滑坡只读取雨量背景，不自动改变位移。</li><li>点击生成情景，再播放、暂停、拖动时间线或回到起点重播。</li><li>修改轨迹、背景或时长需要重新生成；播放时手动修改主参数会退出该项轨迹。</li><li>故障、过期和缺失显示未知。导出包含情景基线与操作记录。</li></ol><p>所有阈值未经点位标定。1秒播放对应1秒模拟，可用3×或5×加速。监测盒与警示终端已提供独立网页；仅支持同一浏览器同源标签页联调，跨设备实时同步尚未接入。</p>`);
+$('#help').onclick=()=>openDialog(`<h2>使用模拟实验台</h2><p>六类新增现象在主沙盘显示。选择风险后，下方“变量与现象”说明各输入如何影响画面。点击“定位效果”可近看，播放效果、暂停或拖动独立时间线查看阶段。动态关闭保留当前静态阶段。滑坡与泥石流必须主动启动运动示意，不由监测阈值自动触发；其距离、速度与范围为假定。冰雪形成示意须主动启用，森林烟柱须设置巡查烟火记录。数据未知时冻结最后有效效果。效果回放不清除巡查记录或监测预警。</p><p>选择积水可查看道路局部近景，使用近景水深滑杆或右侧精确输入同步调整。0 cm 无水；波纹可关闭，启用片区模拟降雨且雨强大于零时才显示雨滴涟漪。暂停停止水位推进；数据异常保留最后有效水面。</p><ol><li>选择风险，使用数字框精确输入或滑杆调整；手动模式参数保持。</li><li>补充路面、巡查、活动与数据状态，查看判断依据。</li><li>情景模式下，为需要变化的主参数勾选轨迹并设置目标值；积水也可开启涨退速度演算。</li><li>可启用片区降雨，并勾选积水、滑坡或泥石流的关联。仅泥石流读取共享雨强，滑坡只读取雨量背景，不自动改变位移。</li><li>点击生成情景，再播放、暂停、拖动时间线或回到起点重播。</li><li>修改轨迹、背景或时长需要重新生成；播放时手动修改主参数会退出该项轨迹。</li><li>故障、过期和缺失显示未知。导出包含情景基线与操作记录。</li></ol><p>所有阈值未经点位标定。1秒播放对应1秒模拟，可用3×或5×加速。监测盒与警示终端已提供独立网页；仅支持同一浏览器同源标签页联调，配置云项目后可同步风险读数与确认记录，动画时间线尚未同步。</p>`);
 $('#sources').onclick=()=>{openDialog(`<h2>数据来源与模型边界</h2><p>新增冰雪、大风、高温、森林火险、滑坡和泥石流画面均为变量驱动的现象示意。冰雪路段与覆盖、热色带、林地关注范围为假定；风向为来向，风迹与位移箭头为视觉映射。烟柱只表示手动巡查记录。滑移距离及泥流速度、宽度、含固比例为手动输入，路径只按局部公开DEM采样下坡，不是已核实沟道或地质灾害模型，不能用作真实影响范围。详见各风险下方说明。</p><div id="dialog-geometry-audit"></div><p>积水近景的道路、地面高差、建筑与排水口均为设计示意，采用米为单位，无垂直夸张。覆盖面积由该示意地面与水平水面的相交关系估算，排除建筑内部；没有使用真实排水或水动力模型，不能推断现实区域淹没、流速或河道水位。</p><div class="source-grid"><div class="source-row"><b>公开背景：高程</b><p>Mapzen Terrain Tiles / AWS Open Data，Terrarium 编码。区域范围 103.46°—103.73°E、30.94°—31.17°N，513×513 重采样网格；原始采样高程约648—2958米。垂直夸张1.8倍，仅用于区域展示，非工程测绘。<a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">查看高程数据来源</a></p></div><div class="source-row"><b>道路与水系：公开地图矢量</b><p id="osm-source-note">来源与载入状态正在检查。</p></div><div class="source-row"><b>建筑模型与点位定位边界</b><p>建筑平面轮廓来自OpenStreetMap，采用高度标签或楼层标签；缺失时统一假定12米高度。建筑高度与地形统一按1.8倍显示，基座补齐公开DEM的地表起伏；白墙、屋顶边缘与窗格为沙盘样式，并非真实立面。道路使用贴地面片；宽度优先使用OSM宽度标签，否则按车道数或道路等级估计，路缘和标线为示意。河道显示宽度为示意。黄央沟节点按文献沟口坐标定位，但坐标基准未注明；其余7个节点为示意。山体颜色结合高程与坡度，树群为装饰示意，位置、数量和尺寸不代表真实植被；材质颗粒不改变地形高度。色圈只是模拟提示，不是真实灾害影响边界。</p></div><div class="source-row"><b>模拟内容：读数、阈值与曲线</b><p>全部传感器读数和预警等级为演示输入，没有接入实时气象预警。低温不等于结冰；降雨不等于泥石流；火险指数不等于实际火情。</p></div><div class="source-row"><b>真实案例参考，非当前状态</b><p><a href="https://dnr.gxzf.gov.cn/xwzx/gnzx/t16014404.shtml" target="_blank" rel="noopener">龙池山洪泥石流历史调查</a> · <a href="https://www.scfzbs.com/sz/202401/82454133.html" target="_blank" rel="noopener">都江堰公安冰雪出行提示</a> · <a href="https://weather.cma.cn/web/alarm/51018141600000_20250616093052.html" target="_blank" rel="noopener">历史高温预警</a></p></div></div>`);fetch(import.meta.env.BASE_URL+'data/osm.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{const el=$('#osm-source-note');if(el)el.innerHTML=`道路与水系采用 OpenStreetMap 数据，共${d.elements?.length??0}条地图要素，其中${d.elements?.filter(w=>w.tags.building).length??0}条建筑轮廓，下载于2026-10-10。只覆盖河谷和城区两个矩形片区，可能不完整或非最新。© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors / ODbL</a>。`}).catch(()=>{const el=$('#osm-source-note');if(el)el.textContent='公开矢量数据未载入，本版未展示道路与水系矢量。'});if(dataProvenance.report)$('#dialog-geometry-audit').innerHTML=auditMarkup(dataProvenance.report);else $('#dialog-geometry-audit').textContent='核查记录未载入，不能确认数据依据。';};
 controlPanel=mountControls(()=>state,render,selectHazard,toast);
 waterView=mountWaterView(()=>state,v=>{updateValue(state,'water',v);render()},()=>{selectHazard('water');scene?.focus('water');$('.map-panel').scrollIntoView({behavior:'smooth',block:'center'})});
@@ -82,6 +85,7 @@ render();createScene($('#canvas'),()=>state,selectHazard).then(s=>{scene=s;$('#l
 window.addEventListener('beforeunload',()=>{save();scene?.dispose();waterView?.dispose();hydraulicView?.dispose();lightningView?.dispose();hazardEffects?.dispose()});
 
 window.addEventListener('storage',e=>{
+ if(cloud.enabled)return;
  let m;try{m=JSON.parse(e.newValue)}catch{return}
  if(e.key===linkPrefix+'sample'&&validSample(m)){
   updateValue(state,'water',m.value);updateNode(state,'water','fault',false);updateNode(state,'water','quality',m.quality);
@@ -97,3 +101,15 @@ setInterval(()=>{
  }
  publishState(state);
 },2000);
+
+const sharedPanel=document.createElement('section');sharedPanel.className='panel cloud-readings';sharedPanel.hidden=true;sharedPanel.style.cssText='padding:20px;margin-bottom:24px';document.querySelector('.maincolumn').append(sharedPanel);
+const sharedSeen=new Set();
+function refreshCloudReadings(){
+ sharedPanel.hidden=!cloud.enabled;
+ if(!cloud.enabled)return;
+ sharedPanel.replaceChildren();const title=document.createElement('h2');title.textContent='云端共享读数 · 与本机动画参数分开';sharedPanel.append(title);
+ for(const h of hazards){const m=cloud.read(h.id),line=document.createElement('p');line.textContent=`${h.name}：${m?m.value+h.unit:'尚无数据'} · ${!m||m.connectionLost||Date.now()-m.at>messageTTL||m.unknown?'当前状态未知':levels[m.level].name}`;sharedPanel.append(line)}
+ let added=false;const acks=cloud.acks;for(const a of acks){const k=a.eventId+':'+a.actor;if(sharedSeen.has(k))continue;sharedSeen.add(k);added=true;state.events.unshift({time:state.seconds,hazard:a.id,text:`云端终端：${hazards.find(h=>h.id===a.id)?.name??'风险'}已阅，未解除风险`});state.events=state.events.slice(0,80);}
+ if(added)render();
+}
+window.addEventListener('shanchuan-cloud',refreshCloudReadings);setInterval(refreshCloudReadings,2000);

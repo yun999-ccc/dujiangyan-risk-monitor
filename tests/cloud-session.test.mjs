@@ -1,0 +1,17 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {CloudSession,validateCloudConfig} from '../src/cloud-session.js';
+const config={url:'https://testing.supabase.co',key:'sb_publishable_abcdefghijklmnopqrstuv',room:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};
+const row=(rev=1,value=35)=>({room_id:config.room,risk_id:'water',revision:rev,packet:{value,level:2,unknown:false,at:Date.now(),eventId:'30000000-0000-4000-8000-000000000001',source:'虚拟监测盒 WATER-01'}});
+function mock(role='sensor'){
+ const calls=[];let failure=false,rows=[row()];const client={auth:{signInWithPassword:async()=>({data:{user:{id:'user'}},error:null}),getSession:async()=>({data:{session:{user:{id:'user'}}}})},from(table){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},single(){return Promise.resolve({data:{role}})},then(ok,bad){return Promise.resolve(failure?{error:{message:'offline'}}:{data:table==='sw_risks'?rows:[]}).then(ok,bad)}};return q},channel(){const ch={on(){return ch},subscribe(cb){queueMicrotask(()=>cb('SUBSCRIBED'));return ch}};return ch},removeChannel:async()=>{},rpc:async(name,args)=>{calls.push({name,args});if(failure)return {error:{message:'NetworkError'}};if(name==='sw_claim_control')return {data:true};return {data:[row(2,args.p_value??35)]}}};return {client,calls,fail(){failure=true},setRows(v){rows=v}};
+}
+test('拒绝管理员密钥、非项目地址和非法场景，配置不包含密码',()=>{assert.equal(validateCloudConfig(config).url,config.url);for(const patch of [{key:'sb_secret_dontpaste'},{url:'http://testing.supabase.co'},{url:'https://testing.supabase.co@evil.example'},{room:'global'},{url:'https://testing.supabase.co/path'}])assert.throws(()=>validateCloudConfig({...config,...patch}));assert.equal(validateCloudConfig({...config,password:'secret'}).password,undefined)});
+test('版本只前进；断网保留末次值并标未知，禁止排队重放上报',async()=>{
+ const m=mock(),s=new CloudSession({factory:async()=>m.client});try{await s.connect(config,'password');assert.equal(s.online,true);assert.equal(s.read('water').value,35);assert.equal(s.accept(row(1,8)),false);await s.submitSample({nonce:crypto.randomUUID(),value:38,quality:'valid'});assert.equal(s.read('water').value,38);m.fail();await s.pull();assert.equal(s.read('water').connectionLost,true);const n=m.calls.length;await assert.rejects(s.submitSample({value:8}),/未连接/);assert.equal(m.calls.length,n);}finally{await s.disconnect()}
+});
+test('角色限制、主动控制权与风险发布隔离；不会用监测页覆盖传感器记录',async()=>{
+ const m=mock('viewer'),s=new CloudSession({factory:async()=>m.client});try{await s.connect(config,'password');await assert.rejects(s.submitSample({}),/没有上报权限/);await assert.rejects(s.acknowledge({}),/只有查看权限/);await assert.rejects(s.claim(),/只有控制账号/);assert.equal(m.calls.length,0);}finally{await s.disconnect()}
+ const n=mock('operator'),c=new CloudSession({factory:async()=>n.client});try{await c.connect(config,'password');await c.publish('wind',{});assert.equal(n.calls.length,0);await c.claim();await c.publish('water',{value:8,source:'监测模拟网页'});assert.equal(n.calls.filter(x=>x.name==='sw_put_risk').length,0);c.stopSharing();assert.equal(c.controlling,false);}finally{await c.disconnect()}
+});
+test('版本冲突暂停共享，不重试覆盖新状态',async()=>{const m=mock('operator'),s=new CloudSession({factory:async()=>m.client});try{await s.connect(config,'password');await s.claim();m.client.rpc=async()=>({error:{code:'40001',message:'revision_conflict'}});await s.publish('wind',{value:25,level:2,unknown:false});assert.equal(s.controlling,false);assert.match(s.status,/状态已变化/)}finally{await s.disconnect()}});
