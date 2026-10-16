@@ -242,3 +242,11 @@ assets/         真实运行截图
 | ![滑坡近景](assets/landslide-strips-preview.png) | ![泥流近景](assets/process-debris-preview.png) |
 
 截图为各过程的固定静态阶段，不能作为真实灾害或工程精度的证据。
+
+## 滑坡周边道路的连续性
+
+默认显示周边道路，可切换「道路全貌」「全范围」「主体近景」。道路离开视野时显示方向提示；两端区分已收录连接点、源记录端点和地图边界。下方平面走向图使用同一组真实地图坐标，不将滑坡示意点连接到道路。机动车道路、山地便道、步道使用不同颜色，铺装未核实。
+
+2026-10-16通过 OpenStreetMap 官方 API 核查 way 501045901：其几何与项目数据一致，起端节点与 way 501045902 相接，末端节点仅关联该便道记录。未发现可据此补入的延续道路；真实端点、铺装和通行情况尚未现场核查。证据与查询地址见 [road-endpoint-check.json](public/data/road-endpoint-check.json)。既有区域数据仍不完整。
+
+![滑坡周边道路与延续待核实端点](assets/road-context-preview.png)

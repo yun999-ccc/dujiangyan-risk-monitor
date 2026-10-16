@@ -1,0 +1,48 @@
+{
+  "source": "OpenStreetMap API 0.6",
+  "checkedDate": "2026-10-16",
+  "status": "verified-osm-record",
+  "wayId": 501045901,
+  "version": 1,
+  "wayTimestamp": "2017-06-16T18:10:00Z",
+  "sameGeometryAsBundled": true,
+  "roadType": "track",
+  "scope": "Only this way and ways sharing its two endpoint nodes were checked; no claim of complete coverage or field verification.",
+  "queries": [
+    {
+      "url": "https://api.openstreetmap.org/api/0.6/node/4919506161/ways.json",
+      "sha256": "a006444f5128468ae9bd57769fe91a821781b3d18e148cedaaf5d2062053e29b"
+    },
+    {
+      "url": "https://api.openstreetmap.org/api/0.6/node/4919505957/ways.json",
+      "sha256": "cb6d23ba59ff59b6d9adee2288ed4405af8b53fb2e6c6be641256228d47568d9"
+    },
+    {
+      "url": "https://api.openstreetmap.org/api/0.6/way/501045901/full.json",
+      "sha256": "c2786d41ceee0b942c1cebb97242c71e279e9e2126d9578032149d1845c03188"
+    }
+  ],
+  "endpoints": [
+    {
+      "side": "start",
+      "nodeId": 4919506161,
+      "lon": 103.5755823,
+      "lat": 31.1325615,
+      "otherRoads": [
+        {
+          "id": 501045902,
+          "highway": "unclassified"
+        }
+      ],
+      "reality": "continuation and passability not field verified"
+    },
+    {
+      "side": "end",
+      "nodeId": 4919505957,
+      "lon": 103.5719098,
+      "lat": 31.144919,
+      "otherRoads": [],
+      "reality": "continuation and passability not field verified"
+    }
+  ]
+}

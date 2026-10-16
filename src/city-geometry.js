@@ -24,12 +24,12 @@ export function roadProfile(tags, mountain=false) {
   const estimated=!(Number.isFinite(supplied)&&supplied>0)&&!(Number.isFinite(lanes)&&lanes>0);
   const displayWidth=mountain&&estimated&&!major ? Math.min(width,8) : width;
   return {width:THREE.MathUtils.clamp(displayWidth,1,40)/1000, walking, major, mountain,
-    color:walking?'#aa9a7c':kind==='track'?'#a29d87':mountain?'#85887d':'#42484b',
+    color:walking?'#b6a383':kind==='track'?'#80694d':mountain?'#56615a':'#42484b',
     widthSource:Number.isFinite(supplied)&&supplied>0?'OSM width':Number.isFinite(lanes)&&lanes>0?'lanes estimate':'class estimate'};
 }
 
 // Preserve road identity alongside batching: effects attach to these exact asphalt faces.
-export function createRoadBuilder(bounds,elevation,liftScale=1,mountainOverride=null,{mountainColor='#85887d',mountainCurbColor='#a5a794',grid=null}={}) {
+export function createRoadBuilder(bounds,elevation,liftScale=1,mountainOverride=null,{mountainColor='#56615a',mountainCurbColor='#8b9487',grid=null}={}) {
   const positions=[[],[],[]],colors=[[],[],[]],metadata=[],records=[],structures=new THREE.Group(),railVertices=[],tunnelVertices=[];
   const ground=(x,z)=>{const geo=unproject(x,z,bounds);return elevation(geo.lon,geo.lat);};
   const pavementOffset=.00005*liftScale;
@@ -54,7 +54,7 @@ export function createRoadBuilder(bounds,elevation,liftScale=1,mountainOverride=
       if(tunnel){
         for(let i=1;i<points.length;i++)for(const q of [points[i-1],points[i]])tunnelVertices.push(q.x,ground(q.x,q.z)+.0001*liftScale,q.z);
       }else{
-        if(!profile.walking)strip(points,profile.width+(mountain?.001:.0024),(x,z)=>deck(x,z)+pavementOffset*.55,mountain?mountainCurbColor:'#b9b5a5','curb',bridge?null:grid);
+        if(!profile.walking)strip(points,profile.width+(tags.highway==='track'?.0003:mountain?.001:.0024),(x,z)=>deck(x,z)+pavementOffset*.55,tags.highway==='track'?'#a18b69':mountain?mountainCurbColor:'#b9b5a5','curb',bridge?null:grid);
         strip(points,profile.width,height,profile.color,null,bridge?null:grid);
         if(profile.major&&!mountain)for(let i=1;i<points.length;i+=2){const a=points[i-1],b=points[i];strip([a,{x:a.x+(b.x-a.x)*.45,z:a.z+(b.z-a.z)*.45}],.00035,(x,z)=>height(x,z)+.000005*liftScale,'#ebd08a','marking',bridge?null:grid);}
         if(bridge){
