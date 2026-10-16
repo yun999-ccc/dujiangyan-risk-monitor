@@ -13,14 +13,14 @@ for(const [role,id] of Object.entries(ids)){await db.query('insert into auth.use
 const as=async role=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids[role]??'']);await db.exec(`set role ${role==='anon'?'anon':'authenticated'}`)};
 const packet={value:18,level:1,unknown:false,reason:'test',action:'核查'};
 test('真实PostgreSQL权限：未登录、旁观者和其他团队不能越权写入或读取',async()=>{
- await as('anon');await assert.rejects(db.query('select * from sw_risks'),/permission denied/);
+ await as('anon');await assert.rejects(db.query('select * from sw_risks where room_id=$1',[room]),/permission denied/);
  await as('viewer');await assert.rejects(db.query('select sw_submit_water($1,$2,35,\'valid\')',[room,crypto.randomUUID()]),/sensor_role_required/);await assert.rejects(db.query('insert into sw_members values ($1,$2,\'operator\')',[other,ids.viewer]),/permission denied/);
  await as('outsider');assert.equal((await db.query('select * from sw_rooms')).rows.length,0);await assert.rejects(db.query('select sw_claim_control($1,$2)',[room,client]),/operator_required/);
 });
 test('上报由服务端判断、随机nonce去重，异常输入拒绝，提醒ID按状态转换更新',async()=>{
- await as('sensor');const nonce=crypto.randomUUID();await db.query('select sw_submit_water($1,$2,35,\'valid\')',[room,nonce]);let r=(await db.query('select * from sw_risks')).rows[0];assert.equal(r.packet.level,2);assert.equal(r.revision,1);const event=r.packet.eventId;await db.query('select sw_submit_water($1,$2,8,\'valid\')',[room,nonce]);r=(await db.query('select * from sw_risks')).rows[0];assert.equal(r.revision,1);assert.equal(r.packet.value,35);
- await db.query('select sw_submit_water($1,$2,36,\'valid\')',[room,crypto.randomUUID()]);assert.equal((await db.query('select * from sw_risks')).rows[0].packet.eventId,event);
- await db.query('select sw_submit_water($1,$2,36,\'missing\')',[room,crypto.randomUUID()]);r=(await db.query('select * from sw_risks')).rows[0];assert.equal(r.packet.unknown,true);assert.equal(r.packet.lastKnownLevel,2);assert.notEqual(r.packet.eventId,event);
+ await db.exec('reset role');await db.query('insert into sw_members values ($1,$2,$3)',[other,ids.sensor,'sensor']);await as('sensor');await db.query('select sw_submit_water($1,$2,35,\'missing\')',[other,crypto.randomUUID()]);const firstFault=(await db.query('select * from sw_risks where room_id=$1',[other])).rows[0];assert.equal(firstFault.packet.lastKnownLevel,null);assert.equal(firstFault.packet.unknown,true);const nonce=crypto.randomUUID();await db.query('select sw_submit_water($1,$2,35,\'valid\')',[room,nonce]);let r=(await db.query('select * from sw_risks where room_id=$1',[room])).rows[0];assert.equal(r.packet.level,2);assert.equal(r.revision,1);const event=r.packet.eventId;await db.query('select sw_submit_water($1,$2,8,\'valid\')',[room,nonce]);r=(await db.query('select * from sw_risks where room_id=$1',[room])).rows[0];assert.equal(r.revision,1);assert.equal(r.packet.value,35);
+ await db.query('select sw_submit_water($1,$2,36,\'valid\')',[room,crypto.randomUUID()]);assert.equal((await db.query('select * from sw_risks where room_id=$1',[room])).rows[0].packet.eventId,event);
+ await db.query('select sw_submit_water($1,$2,36,\'missing\')',[room,crypto.randomUUID()]);r=(await db.query('select * from sw_risks where room_id=$1',[room])).rows[0];assert.equal(r.packet.unknown,true);assert.equal(r.packet.lastKnownLevel,2);assert.notEqual(r.packet.eventId,event);
  await assert.rejects(db.query('select sw_submit_water($1,$2,99,\'valid\')',[room,crypto.randomUUID()]),/invalid_sample/);
 });
 test('单控制端租约、修订号冲突和终端确认不解除状态',async()=>{
